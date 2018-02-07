@@ -1,0 +1,27 @@
+package computeythings.garagemonitor;
+
+import android.os.AsyncTask;
+import android.util.Log;
+
+/**
+ * Created by bryan on 2/6/18.
+ */
+
+public class AsyncSocketWriter extends AsyncTask<TCPSocketService, Void, Void> {
+    private static final String TAG = "SOCKET_WRITER";
+    private String mMessage;
+
+    AsyncSocketWriter(String message) {
+        mMessage = message;
+    }
+
+    @Override
+    protected Void doInBackground(TCPSocketService... tcpSocketServices) {
+        if(tcpSocketServices.length != 1 || tcpSocketServices[0] == null) {
+            Log.e(TAG, "Incorrect SocketHandler parameters");
+            return null;
+        }
+        tcpSocketServices[0].socketWrite(mMessage);
+        return null;
+    }
+}
