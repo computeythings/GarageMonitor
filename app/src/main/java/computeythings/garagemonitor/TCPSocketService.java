@@ -67,6 +67,7 @@ public class TCPSocketService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        Log.d(TAG, "New socket service");
         mBroadcaster = LocalBroadcastManager.getInstance(this);
     }
 
@@ -141,20 +142,6 @@ public class TCPSocketService extends Service {
     }
 
     /*
-        Manually request updated data from server.
-     */
-    public void socketRefresh() {
-        try {
-            OutputStream out = mSocketConnection.getOutputStream();
-            out.write(SEND_REFRESH.getBytes());
-            out.flush(); // Force flush to send data
-        } catch (IOException | NullPointerException e) {
-            Log.w(TAG, "Error writing to connection on " + mServerName);
-            socketOpen();
-        }
-    }
-
-    /*
         Write message to server over socket. Returns false if the message can't be sent.
      */
     public boolean socketWrite(String message) {
@@ -175,6 +162,7 @@ public class TCPSocketService extends Service {
         Send a close message to server and kill socket connection.
      */
     public void socketClose() {
+        Log.d(TAG, "Closing socket connection");
         if (mSocketConnection != null && !mSocketConnection.isClosed()) {
             try {
                 OutputStream out = mSocketConnection.getOutputStream();
@@ -185,7 +173,10 @@ public class TCPSocketService extends Service {
                 Log.w(TAG, "Error writing to connection on " + mServerName);
             }
             mSocketConnection = null; // Delete dead socket
-            mReceiverThread.cancel(true); // Kill polling on socket
+            if(mReceiverThread != null) {
+                mReceiverThread.cancel(true); // Kill polling on socket
+                mReceiverThread = null;
+            }
         }
     }
 
@@ -199,9 +190,13 @@ public class TCPSocketService extends Service {
         return true;
     }
 
+    /*
+        Run when the service is no longer bound to any listeners
+     */
     @Override
     public void onDestroy() {
-        socketClose();
+        // Close the current socket connection
+        new AsyncSocketClose().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, this);
         super.onDestroy();
     }
 
@@ -215,6 +210,7 @@ public class TCPSocketService extends Service {
         Separates polling for data in its own thread
      */
     private static class DataReceiver extends AsyncTask<SSLSocket, String, Void> {
+        private static final String TAG = "DATA_RECEIVER_THREAD";
         LocalBroadcastManager mBroadcaster;
 
         DataReceiver(LocalBroadcastManager broadcaster) {
@@ -232,19 +228,17 @@ public class TCPSocketService extends Service {
                 SSLSocket socket = connection[0];
                 in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-                while (socket.isConnected()) {
+                while (socket.isConnected() && !isCancelled()) {
                     data = in.readLine();
                     if (data != null && !data.equals("")) {
                         publishProgress(data);
                     } else {
-                        socket.close();
                         throw new NullPointerException("Null socket connection to server");
                     }
                 }
             } catch (IOException | NullPointerException e) {
                 Log.w(TAG, "Disconnected from server");
                 broadcastMessage(SERVERSIDE_DISCONNECT);
-                e.printStackTrace();
             }
             return null;
         }

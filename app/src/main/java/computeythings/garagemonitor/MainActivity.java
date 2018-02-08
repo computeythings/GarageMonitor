@@ -26,30 +26,12 @@ import org.json.JSONObject;
 import computeythings.garagemonitor.TCPSocketService.SocketServiceBinder;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String TAG = "MAINACTIVITY";
+    private static final String TAG = "MAIN_ACTIVITY";
     private BroadcastReceiver mDataReceiver;
     private TCPSocketService mSocketConnection;
     private boolean mSocketBound;
 
-    private ServiceConnection mConnection = new ServiceConnection() {
-        // Called when the connection with the service is established
-        public void onServiceConnected(ComponentName className, IBinder service) {
-            // Because we have bound to an explicit
-            // service that is running in our own process, we can
-            // cast its IBinder to a concrete class and directly access it.
-            SocketServiceBinder binder = (SocketServiceBinder) service;
-            mSocketConnection = binder.getService();
-            mSocketBound = true;
-        }
-
-        // Called when the connection with the service disconnects unexpectedly
-        public void onServiceDisconnected(ComponentName className) {
-            Log.e(TAG, "TCPSocketService has disconnected");
-            mSocketConnection.socketClose();
-            mSocketConnection = null;
-            mSocketBound = false;
-        }
-    };
+    private ServiceConnection mConnection;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,91 +39,55 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        // Initialize Buttons
         FloatingActionButton refreshButton = findViewById(R.id.refresh_fab);
+        writeMessageOnClick(refreshButton, TCPSocketService.SEND_REFRESH);
         FloatingActionButton openButton = findViewById(R.id.open_fab);
+        writeMessageOnClick(openButton, TCPSocketService.GARAGE_OPEN);
         FloatingActionButton closeButton = findViewById(R.id.close_fab);
-        refreshButton.setOnClickListener(new View.OnClickListener() {
+        writeMessageOnClick(closeButton, TCPSocketService.GARAGE_CLOSE);
+
+        mDataReceiver = new TCPBroadcastReceiver();
+    }
+
+    //TODO: pull server settings from settings file
+    /*
+        Create the intent to start the server from the selected server in the settings
+     */
+    private Intent getServerFromSettings() {
+        Intent intent = new Intent(this, TCPSocketService.class);
+        intent.putExtra(TCPSocketService.SERVER_NAME, "");
+        intent.putExtra(TCPSocketService.API_KEY, "");
+        intent.putExtra(TCPSocketService.PORT_NUMBER, 4444);
+        intent.putExtra(TCPSocketService.CERT_ID, R.raw.sslcrt);
+        return intent;
+    }
+
+    private void writeMessageOnClick(FloatingActionButton fab, final String message) {
+        fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if (mSocketBound) {
-                    new AsyncSocketRefresh().executeOnExecutor(
+                    new AsyncSocketWriter(message).executeOnExecutor(
                             AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
+                    Log.d(TAG, "Button pressed");
                 } else {
                     Toast.makeText(MainActivity.this, "Server disconnected!",
                             Toast.LENGTH_LONG).show();
                 }
             }
         });
-        openButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (mSocketBound) {
-                    new AsyncSocketWriter(TCPSocketService.GARAGE_OPEN).executeOnExecutor(
-                            AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
-                } else {
-                    Toast.makeText(MainActivity.this, "Server disconnected!",
-                            Toast.LENGTH_LONG).show();
-                }
-            }
-        });
-        closeButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (mSocketBound) {
-                    new AsyncSocketWriter(TCPSocketService.GARAGE_CLOSE).executeOnExecutor(
-                            AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
-                } else {
-                    Toast.makeText(MainActivity.this, "Server disconnected!",
-                            Toast.LENGTH_LONG).show();
-                }
-            }
-        });
-
-        mDataReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if (intent.getAction() == null)
-                    return;
-
-                String status = intent.getStringExtra(TCPSocketService.DATA);
-                if (status.equals(TCPSocketService.SERVERSIDE_DISCONNECT)) {
-                    //TODO: Server reconnect retry
-                    ((TextView) findViewById(R.id.door_status)).setText("CANNOT CONNECT TO SERVER");
-                } else {
-                    try {
-                        JSONObject json = new JSONObject(status);
-
-                        if ((Boolean) json.get("OPEN"))
-                            status = "OPEN";
-                        else if ((Boolean) json.get("CLOSED"))
-                            status = "CLOSED";
-                        else if ((Boolean) json.get("CLOSING"))
-                            status = "CLOSING";
-                        else if ((Boolean) json.get("OPENING"))
-                            status = "OPENING";
-                        else
-                            status = "NEITHER";
-                    } catch (JSONException e) {
-                        Log.w(TAG, "Invalid JSON object: " + status);
-                        e.printStackTrace();
-                        status = "Invalid data received.";
-                    }
-                    ((TextView) findViewById(R.id.door_status)).setText(status);
-                }
-            }
-        };
     }
 
     @Override
-    protected void onStart() {
-        super.onStart();
-        Intent intent = new Intent(this, TCPSocketService.class);
-        intent.putExtra(TCPSocketService.SERVER_NAME, "server");//TODO: pull server settings from settings file
-        intent.putExtra(TCPSocketService.API_KEY, "<APIKEY>");
-        intent.putExtra(TCPSocketService.PORT_NUMBER, 4444);
-        intent.putExtra(TCPSocketService.CERT_ID, R.raw.sslcrt);
+    protected void onResume() {
+        super.onResume();
 
-        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+        mConnection = new TCPServiceConnection();
+        // Create and bind a socket service based on currently selected server
+        bindService(getServerFromSettings(), mConnection, Context.BIND_AUTO_CREATE);
+        // Prepare to receive updates from this service
         LocalBroadcastManager.getInstance(this).registerReceiver((mDataReceiver),
                 new IntentFilter(TCPSocketService.DATA_RECEIVED)
         );
@@ -149,6 +95,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onStop() {
+        Log.d(TAG, "App stopped");
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mDataReceiver);
         unbindService(mConnection);
         super.onStop();
@@ -174,5 +121,68 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    /*
+        Should only have to be initialized once on creation.
+        Receives status updates from TCPSocketServices.
+     */
+    private class TCPBroadcastReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String status = intent.getStringExtra(TCPSocketService.DATA);
+            if(status == null) // We'll be treating the status as a String value
+                return;
+
+            if (status.equals(TCPSocketService.SERVERSIDE_DISCONNECT)) {
+                //TODO: Server reconnect retry
+                ((TextView) findViewById(R.id.door_status)).setText("CANNOT CONNECT TO SERVER");
+            } else {
+                // Data should always be received as a JSON String from the server
+                try {
+                    JSONObject json = new JSONObject(status);
+
+                    if ((Boolean) json.get("OPEN"))
+                        status = "OPEN";
+                    else if ((Boolean) json.get("CLOSED"))
+                        status = "CLOSED";
+                    else if ((Boolean) json.get("CLOSING"))
+                        status = "CLOSING";
+                    else if ((Boolean) json.get("OPENING"))
+                        status = "OPENING";
+                    else
+                        status = "NEITHER";
+                } catch (JSONException e) {
+                    Log.w(TAG, "Invalid JSON object: " + status);
+                    e.printStackTrace();
+                    status = "Invalid data received.";
+                }
+                ((TextView) findViewById(R.id.door_status)).setText(status);
+            }
+        }
+    }
+
+    /*
+        Creates a service to bind to a TCPSocketService on which AsyncTasks are run
+     */
+    private class TCPServiceConnection implements ServiceConnection {
+
+        // Called when the connection with the service is established
+        @Override
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            // Because we have bound to an explicit service that is running in our own process,
+            // we can cast its IBinder to a concrete class and directly access it.
+            SocketServiceBinder binder = (SocketServiceBinder) service;
+            mSocketConnection = binder.getService();
+            Log.i(TAG, "TCPSocketService has connected");
+            mSocketBound = true;
+        }
+
+        // Called when the connection with the service disconnects unexpectedly
+        @Override
+        public void onServiceDisconnected(ComponentName className) {
+            Log.i(TAG, "TCPSocketService has disconnected");
+            mSocketBound = false;
+        }
     }
 }
