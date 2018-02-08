@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -27,6 +28,7 @@ import computeythings.garagemonitor.TCPSocketService.SocketServiceBinder;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MAIN_ACTIVITY";
+    private SwipeRefreshLayout mRefreshLayout;
     private BroadcastReceiver mDataReceiver;
     private TCPSocketService mSocketConnection;
     private boolean mSocketBound;
@@ -39,10 +41,21 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        mRefreshLayout = findViewById(R.id.swiperefresh);
+        mRefreshLayout.setOnRefreshListener(
+                new SwipeRefreshLayout.OnRefreshListener() {
+                    @Override
+                    public void onRefresh() {
+                        Log.d(TAG, "dun got refreshed");
+                        new AsyncSocketRefresh(mRefreshLayout).executeOnExecutor(
+                                AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
+                    }
+                }
+        );
 
         // Initialize Buttons
         FloatingActionButton refreshButton = findViewById(R.id.refresh_fab);
-        writeMessageOnClick(refreshButton, TCPSocketService.SEND_REFRESH);
+        refreshOnClick(refreshButton);
         FloatingActionButton openButton = findViewById(R.id.open_fab);
         writeMessageOnClick(openButton, TCPSocketService.GARAGE_OPEN);
         FloatingActionButton closeButton = findViewById(R.id.close_fab);
@@ -71,7 +84,22 @@ public class MainActivity extends AppCompatActivity {
                 if (mSocketBound) {
                     new AsyncSocketWriter(message).executeOnExecutor(
                             AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
-                    Log.d(TAG, "Button pressed");
+                } else {
+                    Toast.makeText(MainActivity.this, "Server disconnected!",
+                            Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+    }
+
+    private void refreshOnClick(FloatingActionButton fab) {
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mSocketBound) {
+                    mRefreshLayout.setRefreshing(true);
+                    new AsyncSocketRefresh(mRefreshLayout).executeOnExecutor(
+                            AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
                 } else {
                     Toast.makeText(MainActivity.this, "Server disconnected!",
                             Toast.LENGTH_LONG).show();
