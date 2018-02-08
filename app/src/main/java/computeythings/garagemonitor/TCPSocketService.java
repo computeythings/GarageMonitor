@@ -53,6 +53,8 @@ public class TCPSocketService extends Service {
             "computeythings.garagemonitor.TCPSocketService.NEW_DATA";
     public static final String DATA =
             "computeythings.garagemonitor.TCPSocketService.DATA_PAYLOAD";
+    public static final String SERVERSIDE_DISCONNECT =
+            "computeythings.garagemonitor.TCPSocketService.SERVER_DISCONNECT";
     private String mServerName;
     private String mApiKey;
     private int mPort;
@@ -114,11 +116,11 @@ public class TCPSocketService extends Service {
 
             // Create an SSLContext that uses our TrustManager
             context = SSLContext.getInstance("TLS");
-            context.init(null, tmf.getTrustManagers(), new SecureRandom()); //TODO: SecureRandom may need to be null
+            context.init(null, tmf.getTrustManagers(), new SecureRandom());
         } catch (IOException | KeyManagementException | KeyStoreException |
                 NoSuchAlgorithmException | CertificateException e) {
             e.printStackTrace();
-            Log.d(TAG, "error with trust manager");
+            Log.e(TAG, "Error with trust manager");
         }
         return context;
     }
@@ -131,7 +133,7 @@ public class TCPSocketService extends Service {
             mSocketConnection = new AsyncSocketCreator(createTrustManager().getSocketFactory())
                     .execute(mServerName, mPort + "", mApiKey).get();
         } catch (InterruptedException | ExecutionException e) {
-            Log.d(TAG, "Error creating socket");
+            Log.e(TAG, "Error creating socket");
         }
 
         mReceiverThread = new DataReceiver(mBroadcaster);
@@ -142,37 +144,31 @@ public class TCPSocketService extends Service {
         Manually request updated data from server.
      */
     public void socketRefresh() {
-        if (mSocketConnection == null || !mSocketConnection.isConnected()) {
-            socketOpen(); // If socket is closed, data should be refreshed on reconnect.
-        } else {
-            try {
-                OutputStream out = mSocketConnection.getOutputStream();
-                out.write(SEND_REFRESH.getBytes());
-                out.flush(); // Force flush to send data
-            } catch (IOException e) {
-                Log.d(TAG, "Error writing to connection on " + mServerName);
-            }
-
+        try {
+            OutputStream out = mSocketConnection.getOutputStream();
+            out.write(SEND_REFRESH.getBytes());
+            out.flush(); // Force flush to send data
+        } catch (IOException | NullPointerException e) {
+            Log.w(TAG, "Error writing to connection on " + mServerName);
+            socketOpen();
         }
     }
 
     /*
-        Write message to server over socket
+        Write message to server over socket. Returns false if the message can't be sent.
      */
-    public void socketWrite(String message) {
-        if (mSocketConnection == null || !mSocketConnection.isConnected()) {
+    public boolean socketWrite(String message) {
+        try {
+            OutputStream out = mSocketConnection.getOutputStream();
+            out.write(message.getBytes());
+            out.flush(); // Force flush to send data
+            Log.d(TAG, "Socket message sent");
+            return true;
+        } catch (IOException | NullPointerException e) {
+            Log.w(TAG, "Error writing to connection on " + mServerName);
             socketOpen(); // If socket is closed, data should be refreshed on reconnect.
-        } else {
-            try {
-                OutputStream out = mSocketConnection.getOutputStream();
-                out.write(message.getBytes());
-                out.flush(); // Force flush to send data
-                Log.d(TAG, "Socket message sent");
-            } catch (IOException e) {
-                Log.d(TAG, "Error writing to connection on " + mServerName);
-            }
-
         }
+        return false;
     }
 
     /*
@@ -185,11 +181,11 @@ public class TCPSocketService extends Service {
                 out.write(SOCKET_CLOSE.getBytes());
                 out.flush(); // Force flush to send data
                 mSocketConnection.close(); // Close client side socket
-                mSocketConnection = null; // Delete dead socket
             } catch (IOException e) {
-                Log.d(TAG, "Error writing to connection on " + mServerName);
+                Log.w(TAG, "Error writing to connection on " + mServerName);
             }
-
+            mSocketConnection = null; // Delete dead socket
+            mReceiverThread.cancel(true); // Kill polling on socket
         }
     }
 
@@ -238,27 +234,27 @@ public class TCPSocketService extends Service {
 
                 while (socket.isConnected()) {
                     data = in.readLine();
-                    if (data != null) {
+                    if (data != null && !data.equals("")) {
                         publishProgress(data);
+                    } else {
+                        socket.close();
+                        throw new NullPointerException("Null socket connection to server");
                     }
                 }
+            } catch (IOException | NullPointerException e) {
                 Log.w(TAG, "Disconnected from server");
-            } catch (IOException e) {
-                Log.d(TAG, "Cannot connect to socket");
+                broadcastMessage(SERVERSIDE_DISCONNECT);
                 e.printStackTrace();
             }
             return null;
-            //TODO: possible cleanup to do here closing all the streams up
         }
 
         /*
             Sends broadcast with intent TCPSocketService.DATA_RECEIVED and content @msg
          */
         private void broadcastMessage(String msg) {
-            Intent intent = new Intent(TCPSocketService.DATA_RECEIVED);
-            if (msg != null) {
-                intent.putExtra(TCPSocketService.DATA, msg);
-            }
+            Intent intent = new Intent(DATA_RECEIVED);
+            intent.putExtra(DATA, msg);
             this.mBroadcaster.sendBroadcast(intent);
         }
 

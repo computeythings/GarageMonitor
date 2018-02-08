@@ -31,14 +31,14 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
         String api = serverInfo[2];
 
         try {
-            Log.d(TAG, "\n\n\ncreating socket\n\n\n");
+            Log.i(TAG, "Creating socket");
             Socket raw = new Socket(server, port);
             socket = (SSLSocket) mSocketFactory.createSocket(raw, server, port, false);
             OutputStream out = socket.getOutputStream();
             out.write(api.getBytes());
             out.write(TCPSocketService.SEND_REFRESH.getBytes());
         } catch (IOException e) {
-            Log.d(TAG, "Error creating socket to " + server + " on socket " + port);
+            Log.e(TAG, "Error creating socket to " + server + " on socket " + port);
             e.printStackTrace();
         }
         return socket;

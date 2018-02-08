@@ -22,3 +22,5 @@
 bin/
 gen/
 
+# ignore SSL cert
+res/raw/

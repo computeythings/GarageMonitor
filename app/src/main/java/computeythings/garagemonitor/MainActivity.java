@@ -55,17 +55,41 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
+        FloatingActionButton refreshButton = findViewById(R.id.refresh_fab);
+        FloatingActionButton openButton = findViewById(R.id.open_fab);
+        FloatingActionButton closeButton = findViewById(R.id.close_fab);
+        refreshButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //TODO: Send refresh request to socket service here
                 if (mSocketBound) {
                     new AsyncSocketRefresh().executeOnExecutor(
                             AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
-                    Log.d(TAG, "Socket exec");
+                } else {
+                    Toast.makeText(MainActivity.this, "Server disconnected!",
+                            Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+        openButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mSocketBound) {
+                    new AsyncSocketWriter(TCPSocketService.GARAGE_OPEN).executeOnExecutor(
+                            AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
+                } else {
+                    Toast.makeText(MainActivity.this, "Server disconnected!",
+                            Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+        closeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mSocketBound) {
+                    new AsyncSocketWriter(TCPSocketService.GARAGE_CLOSE).executeOnExecutor(
+                            AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
                 } else {
                     Toast.makeText(MainActivity.this, "Server disconnected!",
                             Toast.LENGTH_LONG).show();
@@ -76,24 +100,34 @@ public class MainActivity extends AppCompatActivity {
         mDataReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                String status = intent.getStringExtra(TCPSocketService.DATA);
+                if (intent.getAction() == null)
+                    return;
 
-                try {
-                    JSONObject json = new JSONObject(status);
-                    status = "NEITHER";
-                    if ((Boolean) json.get("CLOSING"))
-                        status = "CLOSING";
-                    if ((Boolean) json.get("CLOSED"))
-                        status = "CLOSED";
-                    if ((Boolean) json.get("OPENING"))
-                        status = "OPENING";
-                    if ((Boolean) json.get("OPEN"))
-                        status = "OPEN";
-                } catch (JSONException e) {
-                    Log.w(TAG, "Invalid JSON object: " + status);
-                    e.printStackTrace();
+                String status = intent.getStringExtra(TCPSocketService.DATA);
+                if (status.equals(TCPSocketService.SERVERSIDE_DISCONNECT)) {
+                    //TODO: Server reconnect retry
+                    ((TextView) findViewById(R.id.door_status)).setText("CANNOT CONNECT TO SERVER");
+                } else {
+                    try {
+                        JSONObject json = new JSONObject(status);
+
+                        if ((Boolean) json.get("OPEN"))
+                            status = "OPEN";
+                        else if ((Boolean) json.get("CLOSED"))
+                            status = "CLOSED";
+                        else if ((Boolean) json.get("CLOSING"))
+                            status = "CLOSING";
+                        else if ((Boolean) json.get("OPENING"))
+                            status = "OPENING";
+                        else
+                            status = "NEITHER";
+                    } catch (JSONException e) {
+                        Log.w(TAG, "Invalid JSON object: " + status);
+                        e.printStackTrace();
+                        status = "Invalid data received.";
+                    }
+                    ((TextView) findViewById(R.id.door_status)).setText(status);
                 }
-                ((TextView) findViewById(R.id.door_status)).setText(status);
             }
         };
     }
@@ -102,8 +136,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         Intent intent = new Intent(this, TCPSocketService.class);
-        intent.putExtra(TCPSocketService.SERVER_NAME, "picam1");//TODO: pull server settings from settings file
-        intent.putExtra(TCPSocketService.API_KEY, "thlZ0MNRrhN21x72j49yDAqNO");
+        intent.putExtra(TCPSocketService.SERVER_NAME, "server");//TODO: pull server settings from settings file
+        intent.putExtra(TCPSocketService.API_KEY, "<APIKEY>");
         intent.putExtra(TCPSocketService.PORT_NUMBER, 4444);
         intent.putExtra(TCPSocketService.CERT_ID, R.raw.sslcrt);
 
