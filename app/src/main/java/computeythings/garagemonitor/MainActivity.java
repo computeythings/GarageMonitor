@@ -11,7 +11,9 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -29,6 +31,8 @@ import computeythings.garagemonitor.TCPSocketService.SocketServiceBinder;
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MAIN_ACTIVITY";
     private SwipeRefreshLayout mRefreshLayout;
+    private DrawerLayout mDrawerLayout;
+    private ActionBarDrawerToggle mDrawerToggle;
     private BroadcastReceiver mDataReceiver;
     private TCPSocketService mSocketConnection;
     private boolean mSocketBound;
@@ -41,12 +45,11 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        mRefreshLayout = findViewById(R.id.swiperefresh);
+        mRefreshLayout = findViewById(R.id.swipe_refresh);
         mRefreshLayout.setOnRefreshListener(
                 new SwipeRefreshLayout.OnRefreshListener() {
                     @Override
                     public void onRefresh() {
-                        Log.d(TAG, "dun got refreshed");
                         new AsyncSocketRefresh(mRefreshLayout).executeOnExecutor(
                                 AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
                     }
@@ -159,7 +162,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             String status = intent.getStringExtra(TCPSocketService.DATA);
-            if(status == null) // We'll be treating the status as a String value
+            if (status == null) // We'll be treating the status as a String value
                 return;
 
             if (status.equals(TCPSocketService.SERVERSIDE_DISCONNECT)) {

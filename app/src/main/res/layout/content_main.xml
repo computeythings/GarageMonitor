@@ -3,15 +3,16 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/swiperefresh"
+    android:id="@+id/swipe_refresh"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="computeythings.garagemonitor.MainActivity"
     tools:showIn="@layout/activity_main"
     >
-    <android.support.constraint.ConstraintLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
         <android.support.design.widget.AppBarLayout
             android:id="@+id/appBarLayout"
@@ -28,50 +29,56 @@
 
         </android.support.design.widget.AppBarLayout>
 
-        <TextView
-            android:id="@+id/door_status"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Hello World!"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+        <android.support.constraint.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" >
 
-        <android.support.design.widget.FloatingActionButton
-            android:id="@+id/refresh_fab"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
-            android:layout_margin="@dimen/fab_margin"
-            android:layout_marginBottom="8dp"
-            android:layout_marginEnd="8dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:srcCompat="@drawable/refresh" />
+            <TextView
+                android:id="@+id/door_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Hello World!"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
-        <android.support.design.widget.FloatingActionButton
-            android:id="@+id/open_fab"
-            android:layout_width="wrap_content"
-            android:layout_height="44dp"
-            android:layout_gravity="top|start"
-            android:layout_margin="@dimen/fab_margin"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="8dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/appBarLayout"
-            app:srcCompat="@android:drawable/arrow_up_float" />
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/refresh_fab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="@dimen/fab_margin"
+                android:layout_marginBottom="8dp"
+                android:layout_marginEnd="8dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:srcCompat="@drawable/refresh" />
 
-        <android.support.design.widget.FloatingActionButton
-            android:id="@+id/close_fab"
-            android:layout_width="wrap_content"
-            android:layout_height="44dp"
-            android:layout_gravity="top|start"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="32dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/open_fab"
-            app:srcCompat="@android:drawable/arrow_down_float" />
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/open_fab"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:layout_gravity="top|start"
+                android:layout_margin="@dimen/fab_margin"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="8dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:srcCompat="@android:drawable/arrow_up_float" />
 
-    </android.support.constraint.ConstraintLayout>
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/close_fab"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:layout_gravity="top|start"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="32dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/open_fab"
+                app:srcCompat="@android:drawable/arrow_down_float" />
+
+        </android.support.constraint.ConstraintLayout>
+    </LinearLayout>
+
 </android.support.v4.widget.SwipeRefreshLayout>

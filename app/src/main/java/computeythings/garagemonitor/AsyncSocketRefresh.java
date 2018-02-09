@@ -1,7 +1,5 @@
 package computeythings.garagemonitor;
 
-import android.app.Activity;
-import android.content.Context;
 import android.os.AsyncTask;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.util.Log;
@@ -17,7 +15,7 @@ public class AsyncSocketRefresh extends AsyncTask<TCPSocketService, Void, Boolea
     private WeakReference<SwipeRefreshLayout> mLayout;
 
     AsyncSocketRefresh(SwipeRefreshLayout layout) {
-            mLayout = new WeakReference<>(layout);
+        mLayout = new WeakReference<>(layout);
     }
 
     @Override

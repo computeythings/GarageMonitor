@@ -173,7 +173,7 @@ public class TCPSocketService extends Service {
                 Log.w(TAG, "Error writing to connection on " + mServerName);
             }
             mSocketConnection = null; // Delete dead socket
-            if(mReceiverThread != null) {
+            if (mReceiverThread != null) {
                 mReceiverThread.cancel(true); // Kill polling on socket
                 mReceiverThread = null;
             }
