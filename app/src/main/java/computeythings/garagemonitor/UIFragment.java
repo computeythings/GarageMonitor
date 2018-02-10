@@ -42,13 +42,14 @@ public class UIFragment extends Fragment
     private View mParentView;
     private BroadcastReceiver mDataReceiver;
     private TCPSocketService mSocketConnection;
-    private DrawerLayout mDrawer;
     private boolean mSocketBound;
     private ServiceConnection mConnection;
     private String mServerName;
     private String mAPIKey;
     private int mCertId;
     private int mServerPort = 4444;
+
+    protected DrawerLayout mDrawer;
 
     @Override
     public void onAttach(Context context) {
@@ -72,6 +73,18 @@ public class UIFragment extends Fragment
         LocalBroadcastManager.getInstance(mContext).registerReceiver((mDataReceiver),
                 new IntentFilter(TCPSocketService.DATA_RECEIVED)
         );
+    }
+
+    /*
+        Create the intent to start the server from the selected server in the settings
+     */
+    private Intent getServerFromSettings() {
+        Intent intent = new Intent(mContext, TCPSocketService.class);
+        intent.putExtra(TCPSocketService.SERVER_NAME, mServerName);
+        intent.putExtra(TCPSocketService.API_KEY, mAPIKey);
+        intent.putExtra(TCPSocketService.PORT_NUMBER, mServerPort);
+        intent.putExtra(TCPSocketService.CERT_ID, mCertId);
+        return intent;
     }
 
     @Override
@@ -111,34 +124,6 @@ public class UIFragment extends Fragment
 
         buttonSetup();
         mDataReceiver = new TCPBroadcastReceiver();
-    }
-
-    /* TODO: Close drawer with back button
-    @Override
-    public void onBackPressed() {
-        if (mDrawer.isDrawerOpen(GravityCompat.START)) {
-            mDrawer.closeDrawer(GravityCompat.START);
-        } else {
-            super.onBackPressed();
-        }
-    }*/
-
-    //TODO: Handle add server request
-    @Override
-    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-        boolean serverSelected = false;
-        switch (item.getItemId()) {
-            case R.id.add_server_option:
-                Toast.makeText(mContext, "Oops I didn't implement this yet.",
-                        Toast.LENGTH_SHORT).show();
-                serverSelected = false;
-                break;
-            case R.id.no_servers:
-                return false; // Don't need to close the drawer if they tap this
-        }
-
-        mDrawer.closeDrawer(GravityCompat.START);
-        return serverSelected;
     }
 
     private void buttonSetup() {
@@ -192,16 +177,22 @@ public class UIFragment extends Fragment
         super.onStop();
     }
 
-    /*
-        Create the intent to start the server from the selected server in the settings
-     */
-    private Intent getServerFromSettings() {
-        Intent intent = new Intent(mContext, TCPSocketService.class);
-        intent.putExtra(TCPSocketService.SERVER_NAME, mServerName);
-        intent.putExtra(TCPSocketService.API_KEY, mAPIKey);
-        intent.putExtra(TCPSocketService.PORT_NUMBER, mServerPort);
-        intent.putExtra(TCPSocketService.CERT_ID, mCertId);
-        return intent;
+    //TODO: Handle add server request
+    @Override
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+        boolean serverSelected = false;
+        switch (item.getItemId()) {
+            case R.id.add_server_option:
+                Toast.makeText(mContext, "Oops I didn't implement this yet.",
+                        Toast.LENGTH_SHORT).show();
+                serverSelected = false;
+                break;
+            case R.id.no_servers:
+                return false; // Don't need to close the drawer if they tap this
+        }
+
+        mDrawer.closeDrawer(GravityCompat.START);
+        return serverSelected;
     }
 
     /*
