@@ -1,7 +1,9 @@
-package computeythings.garagemonitor;
+package computeythings.garagemonitor.async;
 
 import android.os.AsyncTask;
 import android.util.Log;
+
+import computeythings.garagemonitor.services.TCPSocketService;
 
 /**
  * Created by bryan on 2/6/18.

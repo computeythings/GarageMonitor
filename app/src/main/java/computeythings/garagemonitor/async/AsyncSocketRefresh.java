@@ -1,10 +1,12 @@
-package computeythings.garagemonitor;
+package computeythings.garagemonitor.async;
 
 import android.os.AsyncTask;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.util.Log;
 
 import java.lang.ref.WeakReference;
+
+import computeythings.garagemonitor.services.TCPSocketService;
 
 /**
  * Created by bryan on 2/8/18.
@@ -14,7 +16,7 @@ public class AsyncSocketRefresh extends AsyncTask<TCPSocketService, Void, Boolea
     private static final String TAG = "SOCKET_REFRESH";
     private WeakReference<SwipeRefreshLayout> mLayout;
 
-    AsyncSocketRefresh(SwipeRefreshLayout layout) {
+    public AsyncSocketRefresh(SwipeRefreshLayout layout) {
         mLayout = new WeakReference<>(layout);
     }
 

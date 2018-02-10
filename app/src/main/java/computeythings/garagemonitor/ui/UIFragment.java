@@ -1,4 +1,4 @@
-package computeythings.garagemonitor;
+package computeythings.garagemonitor.ui;
 
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -12,6 +12,7 @@ import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.GravityCompat;
@@ -30,6 +31,11 @@ import android.widget.Toast;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import computeythings.garagemonitor.R;
+import computeythings.garagemonitor.services.TCPSocketService;
+import computeythings.garagemonitor.async.AsyncSocketRefresh;
+import computeythings.garagemonitor.async.AsyncSocketWriter;
 
 /**
  * Created by bryan on 2/9/18.
@@ -55,16 +61,13 @@ public class UIFragment extends Fragment
     public void onAttach(Context context) {
         super.onAttach(context);
         mContext = context;
+
+        mContext.startService(getServerFromSettings());
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        //TODO: pull server settings from settings file
-        mServerName = "";
-        mAPIKey = "";
-        mCertId = R.raw.sslcrt;
-        mServerPort = 4444;
 
         mConnection = new TCPServiceConnection();
         // Create and bind a socket service based on currently selected server
@@ -79,6 +82,11 @@ public class UIFragment extends Fragment
         Create the intent to start the server from the selected server in the settings
      */
     private Intent getServerFromSettings() {
+        //TODO: pull server settings from settings file
+        mServerName = "";
+        mAPIKey = "";
+        mCertId = R.raw.sslcrt;
+        mServerPort = 4444;
         Intent intent = new Intent(mContext, TCPSocketService.class);
         intent.putExtra(TCPSocketService.SERVER_NAME, mServerName);
         intent.putExtra(TCPSocketService.API_KEY, mAPIKey);
@@ -171,7 +179,6 @@ public class UIFragment extends Fragment
 
     @Override
     public void onStop() {
-        Log.d(TAG, "App stopped");
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(mDataReceiver);
         mContext.unbindService(mConnection);
         super.onStop();
@@ -180,15 +187,17 @@ public class UIFragment extends Fragment
     //TODO: Handle add server request
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-        boolean serverSelected = false;
+        boolean serverSelected;
         switch (item.getItemId()) {
             case R.id.add_server_option:
-                Toast.makeText(mContext, "Oops I didn't implement this yet.",
-                        Toast.LENGTH_SHORT).show();
+                DialogFragment dialog = new AddServerDialog();
+                dialog.show(getFragmentManager(), "new_server");
                 serverSelected = false;
                 break;
             case R.id.no_servers:
                 return false; // Don't need to close the drawer if they tap this
+            default:
+                serverSelected = true;
         }
 
         mDrawer.closeDrawer(GravityCompat.START);
@@ -205,7 +214,17 @@ public class UIFragment extends Fragment
         public void onServiceConnected(ComponentName className, IBinder service) {
             // Because we have bound to an explicit service that is running in our own process,
             // we can cast its IBinder to a concrete class and directly access it.
-            TCPSocketService.SocketServiceBinder binder = (TCPSocketService.SocketServiceBinder) service;
+            TCPSocketService.SocketServiceBinder binder =
+                    (TCPSocketService.SocketServiceBinder) service;
+            // If the binder is null then that means the socket connection no longer exists;
+            // in that case we kill the currently running service create the new desired socket
+            if(binder == null) {
+                mContext.stopService(new Intent(mContext, TCPSocketService.class));
+                mContext.startService(getServerFromSettings());
+                mContext.bindService(getServerFromSettings(), this,
+                        Context.BIND_AUTO_CREATE);
+                return;
+            }
             mSocketConnection = binder.getService();
             Log.i(TAG, "TCPSocketService has connected");
             mSocketBound = true;

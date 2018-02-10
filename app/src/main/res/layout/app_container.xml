@@ -8,7 +8,7 @@
 
     <fragment
         android:id="@+id/ui_fragment"
-        android:name="computeythings.garagemonitor.UIFragment"
+        android:name="computeythings.garagemonitor.ui.UIFragment"
         android:layout_weight="1"
         android:layout_width="0dp"
         android:layout_height="match_parent" />

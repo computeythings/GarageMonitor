@@ -1,10 +1,11 @@
-package computeythings.garagemonitor;
+package computeythings.garagemonitor.services;
 
-import android.app.Service;
+import android.app.IntentService;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.IBinder;
+import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
@@ -28,6 +29,9 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
 
+import computeythings.garagemonitor.async.AsyncSocketClose;
+import computeythings.garagemonitor.async.AsyncSocketCreator;
+
 /**
  * SSL Socket service used to connect to garage door opener server.
  * Requires a cert be stored in the res/raw resources directory.
@@ -35,26 +39,26 @@ import javax.net.ssl.TrustManagerFactory;
  * Created by bryan on 2/6/18.
  */
 
-public class TCPSocketService extends Service {
+public class TCPSocketService extends IntentService {
     private static final String TAG = "SOCKET_SERVICE";
     public static final String SEND_REFRESH = "REFRESH";
     public static final String SOCKET_CLOSE = "KILL";
     public static final String GARAGE_OPEN = "OPEN_GARAGE";
     public static final String GARAGE_CLOSE = "CLOSE_GARAGE";
     public static final String SERVER_NAME =
-            "computeythings.garagemonitor.TCPSocketService.SERVER";
+            "computeythings.garagemonitor.services.TCPSocketService.SERVER";
     public static final String API_KEY =
-            "computeythings.garagemonitor.TCPSocketService.API_KEY";
+            "computeythings.garagemonitor.services.TCPSocketService.API_KEY";
     public static final String PORT_NUMBER =
-            "computeythings.garagemonitor.TCPSocketService.PORT";
+            "computeythings.garagemonitor.services.TCPSocketService.PORT";
     public static final String CERT_ID =
-            "computeythings.garagemonitor.TCPSocketService.CERT";
+            "computeythings.garagemonitor.services.TCPSocketService.CERT";
     public static final String DATA_RECEIVED =
-            "computeythings.garagemonitor.TCPSocketService.NEW_DATA";
+            "computeythings.garagemonitor.services.TCPSocketService.NEW_DATA";
     public static final String DATA =
-            "computeythings.garagemonitor.TCPSocketService.DATA_PAYLOAD";
+            "computeythings.garagemonitor.services.TCPSocketService.DATA_PAYLOAD";
     public static final String SERVERSIDE_DISCONNECT =
-            "computeythings.garagemonitor.TCPSocketService.SERVER_DISCONNECT";
+            "computeythings.garagemonitor.services.TCPSocketService.SERVER_DISCONNECT";
     private String mServerName;
     private String mApiKey;
     private int mPort;
@@ -64,6 +68,10 @@ public class TCPSocketService extends Service {
     private DataReceiver mReceiverThread;
     private final SocketServiceBinder mBinder = new SocketServiceBinder();
 
+    public TCPSocketService() {
+        super("TCPSocketService");
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -72,23 +80,49 @@ public class TCPSocketService extends Service {
     }
 
     @Override
-    public IBinder onBind(Intent intent) {
-        // Only update values if the socket has not already been bound
-        if (mSocketConnection == null || !mSocketConnection.isBound()) {
-            mServerName = intent.getStringExtra(SERVER_NAME);
-            mApiKey = intent.getStringExtra(API_KEY);
-            mPort = intent.getIntExtra(PORT_NUMBER, -1);
-            mCertID = intent.getIntExtra(CERT_ID, -1);
-        }
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        // Load in server properties
+        mServerName = intent.getStringExtra(SERVER_NAME);
+        mApiKey = intent.getStringExtra(API_KEY);
+        mPort = intent.getIntExtra(PORT_NUMBER, -1);
+        mCertID = intent.getIntExtra(CERT_ID, -1);
+        // Open socket with new server properties
+        socketOpen();
 
-        // Do not bind if values are still not valid
-        if (mServerName == null || mPort == -1 || mCertID == -1 || mApiKey == null) {
-            Toast.makeText(this, "Invalid server values!", Toast.LENGTH_SHORT).show();
+        return START_NOT_STICKY;
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        if (!mServerName.equals(intent.getStringExtra(SERVER_NAME)) ||
+        !mApiKey.equals(intent.getStringExtra(API_KEY)) ||
+        mPort != intent.getIntExtra(PORT_NUMBER, -1) ||
+        mCertID != intent.getIntExtra(CERT_ID, -1)) {
+            Log.d(TAG, "Attempting to rebind to socket belonging to different server");
             return null;
         }
-
-        socketOpen();
+        // Create new socket polling thread
+        mReceiverThread = new DataReceiver(mBroadcaster);
+        mReceiverThread.execute(mSocketConnection);
         return mBinder;
+    }
+
+    @Override
+    public void onRebind(Intent intent) {
+        // Create new socket polling thread
+        mReceiverThread = new DataReceiver(mBroadcaster);
+        mReceiverThread.execute(mSocketConnection);
+    }
+
+    @Override
+    protected void onHandleIntent(@Nullable Intent intent) {
+        if(intent == null)
+            return;
+        // Do not start if values are still not valid
+        if (mServerName == null || mPort == -1 || mCertID == -1 || mApiKey == null) {
+            Toast.makeText(this, "Invalid server values.", Toast.LENGTH_SHORT).show();
+            stopSelf();
+        }
     }
 
     /*
@@ -136,9 +170,6 @@ public class TCPSocketService extends Service {
         } catch (InterruptedException | ExecutionException e) {
             Log.e(TAG, "Error creating socket");
         }
-
-        mReceiverThread = new DataReceiver(mBroadcaster);
-        mReceiverThread.execute(mSocketConnection);
     }
 
     /*
@@ -149,7 +180,6 @@ public class TCPSocketService extends Service {
             OutputStream out = mSocketConnection.getOutputStream();
             out.write(message.getBytes());
             out.flush(); // Force flush to send data
-            Log.d(TAG, "Socket message sent");
             return true;
         } catch (IOException | NullPointerException e) {
             Log.w(TAG, "Error writing to connection on " + mServerName);
@@ -187,7 +217,7 @@ public class TCPSocketService extends Service {
     public boolean onUnbind(Intent intent) {
         mReceiverThread.cancel(true);
         mReceiverThread = null; // kill dead thread
-        return true;
+        return mSocketConnection.isConnected(); // allow rebind as long as socket is open
     }
 
     /*
@@ -200,8 +230,8 @@ public class TCPSocketService extends Service {
         super.onDestroy();
     }
 
-    class SocketServiceBinder extends Binder {
-        TCPSocketService getService() {
+    public class SocketServiceBinder extends Binder {
+        public TCPSocketService getService() {
             return TCPSocketService.this;
         }
     }

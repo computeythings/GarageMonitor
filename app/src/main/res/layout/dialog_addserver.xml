@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
     android:orientation="vertical">
 
     <TextView
         android:id="@+id/add_server_dialog_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:paddingBottom="20dp"
         android:layout_gravity="center"
+        android:paddingBottom="20dp"
         android:text="Add A Server" />
 
     <TextView
-        android:labelFor="@id/server_nickname"
         android:id="@+id/add_server_dialog_Nickname"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:labelFor="@id/server_nickname"
         android:text="Connection name:" />
 
     <EditText
@@ -24,6 +24,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ems="10"
+        android:hint="Optional"
         android:inputType="text" />
 
     <TextView
@@ -38,7 +39,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ems="10"
-        android:inputType="textPassword" />
+        android:inputType="text" />
 
     <TextView
         android:id="@+id/add_server_dialog_apikey"
@@ -52,7 +53,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ems="10"
-        android:inputType="textPassword" />
+        android:inputType="text" />
 
     <TextView
         android:id="@+id/add_server_dialog_port"
@@ -63,10 +64,10 @@
 
     <EditText
         android:id="@+id/port_value"
-        android:hint="Default: 4444"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ems="10"
+        android:hint="Default: 4444"
         android:inputType="number" />
 
     <TextView

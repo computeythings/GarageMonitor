@@ -1,4 +1,4 @@
-package computeythings.garagemonitor;
+package computeythings.garagemonitor.ui;
 
 import android.os.Bundle;
 import android.support.v4.view.GravityCompat;
@@ -6,7 +6,9 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 
-public class MainActivity extends AppCompatActivity {
+import computeythings.garagemonitor.R;
+
+public class UIActivity extends AppCompatActivity {
     private static final String TAG = "MAIN_ACTIVITY";
     UIFragment mUIFragment;
 

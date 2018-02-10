@@ -1,4 +1,4 @@
-package computeythings.garagemonitor;
+package computeythings.garagemonitor.async;
 
 import android.os.AsyncTask;
 import android.util.Log;
@@ -10,6 +10,8 @@ import java.net.Socket;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
+import computeythings.garagemonitor.services.TCPSocketService;
+
 
 /**
  * Created by bryan on 2/6/18.
@@ -19,7 +21,7 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
     private static final String TAG = "SOCKET_CREATOR";
     private SSLSocketFactory mSocketFactory;
 
-    AsyncSocketCreator(SSLSocketFactory socketFactory) {
+    public AsyncSocketCreator(SSLSocketFactory socketFactory) {
         mSocketFactory = socketFactory; // created from self-signed cert
     }
 

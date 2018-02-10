@@ -1,7 +1,9 @@
-package computeythings.garagemonitor;
+package computeythings.garagemonitor.async;
 
 import android.os.AsyncTask;
 import android.util.Log;
+
+import computeythings.garagemonitor.services.TCPSocketService;
 
 /**
  * Created by bryan on 2/6/18.
@@ -11,7 +13,7 @@ public class AsyncSocketWriter extends AsyncTask<TCPSocketService, Void, Boolean
     private static final String TAG = "SOCKET_WRITER";
     private String mMessage;
 
-    AsyncSocketWriter(String message) {
+    public AsyncSocketWriter(String message) {
         mMessage = message;
     }
 
