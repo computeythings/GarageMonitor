@@ -103,8 +103,7 @@ public class TCPSocketService extends IntentService {
         }
         // Create new socket polling thread
         mReceiverThread = new DataReceiver(mBroadcaster);
-        // Run on Serial thread to make sure the socket has been created first
-        mReceiverThread.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, mSocketConnection);
+        mReceiverThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
         return mBinder;
     }
 
@@ -166,9 +165,8 @@ public class TCPSocketService extends IntentService {
      */
     private void socketOpen() {
         try {
-            // Open socket on serial thread to make sure no action gets run on socket first
             mSocketConnection = new AsyncSocketCreator(createTrustManager().getSocketFactory())
-                    .executeOnExecutor(AsyncTask.SERIAL_EXECUTOR,
+                    .executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,
                             mServerAddress, mPort + "", mApiKey).get();
         } catch (InterruptedException | ExecutionException e) {
             Log.e(TAG, "Error creating socket");
@@ -228,7 +226,7 @@ public class TCPSocketService extends IntentService {
     @Override
     public void onDestroy() {
         // Close the current socket connection
-        new AsyncSocketClose().executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, this);
+        new AsyncSocketClose().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, this);
         super.onDestroy();
     }
 

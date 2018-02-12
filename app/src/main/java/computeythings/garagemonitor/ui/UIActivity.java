@@ -37,6 +37,6 @@ public class UIActivity extends AppCompatActivity implements AddServerDialog.OnS
 
     @Override
     public void onServerAdded(boolean isFirstServer) {
-        mUIFragment.updateServerList();
+        mUIFragment.updateServerList(isFirstServer);
     }
 }
