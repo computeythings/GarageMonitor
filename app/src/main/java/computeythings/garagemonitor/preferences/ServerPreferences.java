@@ -2,7 +2,6 @@ package computeythings.garagemonitor.preferences;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.support.annotation.Nullable;
 import android.util.Log;
 
 import org.json.JSONException;
@@ -67,7 +66,7 @@ public class ServerPreferences {
         Set<String> serverList = getServerList();
         serverList.add(serverName);
 
-        if(!serverList.contains(serverName))
+        if (!serverList.contains(serverName))
             return true; // return true if the list doesn't already contain the server
 
 
