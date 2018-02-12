@@ -12,7 +12,7 @@ import java.util.Set;
 
 /**
  * Class used to interact with the apps saved preferences
- *
+ * <p>
  * Created by bryan on 2/11/18.
  */
 
@@ -36,7 +36,8 @@ public class ServerPreferences {
     /*
         Adds a new server to the list saved in preferences
      */
-    public boolean addServer(String name, String address, String apikey, int port, int certLocation) {
+    public boolean addServer(String name, String address, String apikey, int port,
+                             String certLocation) {
         JSONObject json = new JSONObject();
         try {
             json.put(SERVER_NAME, name);

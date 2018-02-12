@@ -2,6 +2,7 @@ package computeythings.garagemonitor.services;
 
 import android.app.IntentService;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.IBinder;
@@ -35,7 +36,7 @@ import computeythings.garagemonitor.async.AsyncSocketCreator;
 /**
  * SSL Socket service used to connect to garage door opener server.
  * Requires a cert be stored in the res/raw resources directory.
- *
+ * <p>
  * Created by bryan on 2/6/18.
  */
 
@@ -62,7 +63,7 @@ public class TCPSocketService extends IntentService {
     private String mServerAddress;
     private String mApiKey;
     private int mPort;
-    private int mCertID;
+    private String mCertLocation;
     private SSLSocket mSocketConnection;
     private LocalBroadcastManager mBroadcaster;
     private DataReceiver mReceiverThread;
@@ -85,7 +86,7 @@ public class TCPSocketService extends IntentService {
         mServerAddress = intent.getStringExtra(SERVER_ADDRESS);
         mApiKey = intent.getStringExtra(API_KEY);
         mPort = intent.getIntExtra(PORT_NUMBER, -1);
-        mCertID = intent.getIntExtra(CERT_ID, -1);
+        mCertLocation = intent.getStringExtra(CERT_ID);
         // Open socket with new server properties
         socketOpen();
 
@@ -95,9 +96,9 @@ public class TCPSocketService extends IntentService {
     @Override
     public IBinder onBind(Intent intent) {
         if (!mServerAddress.equals(intent.getStringExtra(SERVER_ADDRESS)) ||
-        !mApiKey.equals(intent.getStringExtra(API_KEY)) ||
-        mPort != intent.getIntExtra(PORT_NUMBER, -1) ||
-        mCertID != intent.getIntExtra(CERT_ID, -1)) {
+                !mApiKey.equals(intent.getStringExtra(API_KEY)) ||
+                mPort != intent.getIntExtra(PORT_NUMBER, -1) ||
+                !mCertLocation.equals(intent.getStringExtra(CERT_ID))) {
             Log.d(TAG, "Attempting to rebind to socket belonging to different server");
             return null;
         }
@@ -116,10 +117,10 @@ public class TCPSocketService extends IntentService {
 
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
-        if(intent == null)
+        if (intent == null)
             return;
         // Do not start if values are still not valid
-        if (mServerAddress == null || mPort == -1 || mCertID == -1 || mApiKey == null) {
+        if (mServerAddress == null || mPort == -1 || mCertLocation == null || mApiKey == null) {
             Toast.makeText(this, "Invalid server values.", Toast.LENGTH_SHORT).show();
             stopSelf();
         }
@@ -134,7 +135,7 @@ public class TCPSocketService extends IntentService {
             CertificateFactory cf = CertificateFactory.getInstance("X.509");
             Certificate ca;
             // Load ca from resource directory
-            try (InputStream caInput = getResources().openRawResource(mCertID)) {
+            try (InputStream caInput = getContentResolver().openInputStream(Uri.parse(mCertLocation))) {
                 ca = cf.generateCertificate(caInput);
             }
 

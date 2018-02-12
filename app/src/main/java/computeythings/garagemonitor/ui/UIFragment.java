@@ -111,7 +111,7 @@ public class UIFragment extends Fragment
                     ServerPreferences.SERVER_API_KEY));
             intent.putExtra(TCPSocketService.PORT_NUMBER, server.getInt(
                     ServerPreferences.SERVER_PORT));
-            intent.putExtra(TCPSocketService.CERT_ID, server.getInt(
+            intent.putExtra(TCPSocketService.CERT_ID, server.getString(
                     ServerPreferences.SERVER_CERT));
             return intent;
         } catch (JSONException e) {
@@ -226,7 +226,8 @@ public class UIFragment extends Fragment
         Unbind service and broadcast receiver when the fragment is no longer active
      */
     @Override
-    public void onStop() {
+    public void onDestroy() {
+        super.onDestroy();
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(mDataReceiver);
         mContext.unbindService(mConnection);
         super.onStop();
