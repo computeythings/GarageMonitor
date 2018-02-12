@@ -35,7 +35,7 @@ import computeythings.garagemonitor.async.AsyncSocketCreator;
 /**
  * SSL Socket service used to connect to garage door opener server.
  * Requires a cert be stored in the res/raw resources directory.
- * <p>
+ *
  * Created by bryan on 2/6/18.
  */
 

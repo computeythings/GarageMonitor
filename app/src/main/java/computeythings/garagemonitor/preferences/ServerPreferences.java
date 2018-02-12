@@ -11,6 +11,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * Class used to interact with the apps saved preferences
+ *
  * Created by bryan on 2/11/18.
  */
 
