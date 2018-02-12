@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -23,6 +24,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -32,17 +34,22 @@ import android.widget.Toast;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Iterator;
+import java.util.ServiceConfigurationError;
+import java.util.Set;
+
 import computeythings.garagemonitor.R;
-import computeythings.garagemonitor.services.TCPSocketService;
 import computeythings.garagemonitor.async.AsyncSocketRefresh;
 import computeythings.garagemonitor.async.AsyncSocketWriter;
+import computeythings.garagemonitor.preferences.ServerPreferences;
+import computeythings.garagemonitor.services.TCPSocketService;
 
 /**
  * Created by bryan on 2/9/18.
  */
 
 public class UIFragment extends Fragment
-        implements NavigationView.OnNavigationItemSelectedListener {
+        implements NavigationView.OnNavigationItemSelectedListener, View.OnLongClickListener {
     private static final String TAG = "UI_Fragment";
     private Context mContext;
     private View mParentView;
@@ -50,25 +57,30 @@ public class UIFragment extends Fragment
     private TCPSocketService mSocketConnection;
     private boolean mSocketBound;
     private ServiceConnection mConnection;
-    private String mServerName;
-    private String mAPIKey;
-    private int mCertId;
-    private int mServerPort = 4444;
 
     protected DrawerLayout mDrawer;
+    protected ServerPreferences mPreferences;
 
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
         mContext = context;
+        mPreferences = new ServerPreferences(mContext);
 
-        mContext.startService(getServerFromSettings());
+        if(mPreferences.getSelectedServer() != null)
+            mContext.startService(getServerFromSettings());
     }
 
     @Override
     public void onResume() {
         super.onResume();
 
+        serverConnect();
+    }
+
+    private void serverConnect() {
+        if(mPreferences.getSelectedServer() == null)
+            return;
         mConnection = new TCPServiceConnection();
         // Create and bind a socket service based on currently selected server
         mContext.bindService(getServerFromSettings(), mConnection, Context.BIND_AUTO_CREATE);
@@ -82,17 +94,25 @@ public class UIFragment extends Fragment
         Create the intent to start the server from the selected server in the settings
      */
     private Intent getServerFromSettings() {
-        //TODO: pull server settings from settings file
-        mServerName = "";
-        mAPIKey = "";
-        mCertId = R.raw.sslcrt;
-        mServerPort = 4444;
         Intent intent = new Intent(mContext, TCPSocketService.class);
-        intent.putExtra(TCPSocketService.SERVER_NAME, mServerName);
-        intent.putExtra(TCPSocketService.API_KEY, mAPIKey);
-        intent.putExtra(TCPSocketService.PORT_NUMBER, mServerPort);
-        intent.putExtra(TCPSocketService.CERT_ID, mCertId);
-        return intent;
+        //TODO: pull server settings from settings file
+        try {
+            JSONObject server = new JSONObject(mPreferences.getServerInfo(
+                    mPreferences.getSelectedServer()));
+            intent.putExtra(TCPSocketService.SERVER_ADDRESS, server.getString(
+                    ServerPreferences.SERVER_ADDRESS));
+            intent.putExtra(TCPSocketService.API_KEY, server.getString(
+                    ServerPreferences.SERVER_API_KEY));
+            intent.putExtra(TCPSocketService.PORT_NUMBER, server.getInt(
+                    ServerPreferences.SERVER_PORT));
+            intent.putExtra(TCPSocketService.CERT_ID, server.getInt(
+                    ServerPreferences.SERVER_CERT));
+            return intent;
+        } catch (JSONException e) {
+            Log.e(TAG, "Invalid server settings");
+            e.printStackTrace();
+        }
+        return null;
     }
 
     @Override
@@ -118,6 +138,11 @@ public class UIFragment extends Fragment
         toggle.syncState();
         NavigationView navigationView = mParentView.findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+        navigationView.setOnLongClickListener(this);
+
+        // Populate menu
+        updateServerList();
+
         //Setup swipe to refresh
         final SwipeRefreshLayout swipeRefreshLayout = mParentView.findViewById(R.id.swipe_refresh);
         swipeRefreshLayout.setOnRefreshListener(
@@ -125,7 +150,7 @@ public class UIFragment extends Fragment
                     @Override
                     public void onRefresh() {
                         new AsyncSocketRefresh(swipeRefreshLayout).executeOnExecutor(
-                                AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
+                                AsyncTask.SERIAL_EXECUTOR, mSocketConnection);
                     }
                 }
         );
@@ -153,7 +178,7 @@ public class UIFragment extends Fragment
                 if (mSocketBound) {
                     swipeRefreshLayout.setRefreshing(true);
                     new AsyncSocketRefresh(swipeRefreshLayout).executeOnExecutor(
-                            AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
+                            AsyncTask.SERIAL_EXECUTOR, mSocketConnection);
                 } else {
                     Toast.makeText(getContext(), "Server disconnected!",
                             Toast.LENGTH_LONG).show();
@@ -168,7 +193,7 @@ public class UIFragment extends Fragment
             public void onClick(View view) {
                 if (mSocketBound) {
                     new AsyncSocketWriter(message).executeOnExecutor(
-                            AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
+                            AsyncTask.SERIAL_EXECUTOR, mSocketConnection);
                 } else {
                     Toast.makeText(getContext(), "Server disconnected!",
                             Toast.LENGTH_LONG).show();
@@ -184,24 +209,94 @@ public class UIFragment extends Fragment
         super.onStop();
     }
 
-    //TODO: Handle add server request
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-        boolean serverSelected;
-        switch (item.getItemId()) {
-            case R.id.add_server_option:
-                DialogFragment dialog = new AddServerDialog();
-                dialog.show(getFragmentManager(), "new_server");
-                serverSelected = false;
-                break;
-            case R.id.no_servers:
-                return false; // Don't need to close the drawer if they tap this
-            default:
-                serverSelected = true;
+        // todo: move to strings resource file
+        String selected = item.getTitle().toString();
+        if(selected.equals("Add Server")) {
+            DialogFragment dialog = new AddServerDialog();
+            dialog.show(getFragmentManager(), "new_server");
+        } else if(!selected.equals("No servers")) {
+            String currentServer = mPreferences.getSelectedServer();
+
+            if(currentServer == null) {
+                mPreferences.setSelectedServer(selected);
+                // start new service and connect
+                mContext.startService(getServerFromSettings());
+                serverConnect();
+            } else if(!currentServer.equals(selected)) {
+                // Kill the running service connect to a different server
+                mContext.unbindService(mConnection);
+                mContext.stopService(getServerFromSettings());
+
+                mPreferences.setSelectedServer(selected);
+                // start new service and connect
+                mContext.startService(getServerFromSettings());
+                serverConnect();
+            }
+        } else {
+            return false;
         }
 
         mDrawer.closeDrawer(GravityCompat.START);
-        return serverSelected;
+        return true;
+    }
+
+    @Override
+    public boolean onLongClick(View view) {
+        Log.d("DEBUG", "LONG PRESS REGISTERED");
+        if(view instanceof MenuItem) {
+            String selected = ((MenuItem) view).getTitle().toString();
+            if(mPreferences.getServerList().contains(selected)) {
+                try {
+                    JSONObject serverInfo = new JSONObject(mPreferences.getServerInfo(selected));
+
+                    DialogFragment dialog = new AddServerDialog();
+                    Bundle editInfo = new Bundle();
+
+                    editInfo.keySet().add(AddServerDialog.EDIT_KEY);
+                    editInfo.putString(AddServerDialog.EDIT_NAME,
+                            serverInfo.getString(ServerPreferences.SERVER_NAME));
+                    editInfo.putString(AddServerDialog.EDIT_ADDRESS,
+                            serverInfo.getString(ServerPreferences.SERVER_ADDRESS));
+                    editInfo.putString(AddServerDialog.EDIT_API_KEY,
+                            serverInfo.getString(ServerPreferences.SERVER_API_KEY));
+                    editInfo.putInt(AddServerDialog.EDIT_PORT,
+                            serverInfo.getInt(ServerPreferences.SERVER_PORT));
+
+                    dialog.setArguments(editInfo);
+                    dialog.show(getFragmentManager(), "new_server");
+                } catch (JSONException e) {
+                    Log.e(TAG, "Invalid server info received");
+                    e.printStackTrace();
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /*
+        Updates the server list to the most current state
+     */
+    public void updateServerList() {
+        NavigationView nav = mParentView.findViewById(R.id.nav_view);
+        Menu menu = nav.getMenu().getItem(0).getSubMenu();
+        Set<String> serverList = mPreferences.getServerList();
+        if (serverList.size() > 0) {
+            menu.clear();
+            for (String server : serverList) {
+                if(server.equals(mPreferences.getSelectedServer()))
+                    menu.add(server).setCheckable(true).setChecked(true); // Check selected server
+                else
+                    menu.add(server).setCheckable(true);
+            }
+            if(mSocketConnection == null) {
+                mContext.startService(getServerFromSettings());
+                serverConnect();
+            }
+        }
     }
 
     /*
@@ -218,7 +313,7 @@ public class UIFragment extends Fragment
                     (TCPSocketService.SocketServiceBinder) service;
             // If the binder is null then that means the socket connection no longer exists;
             // in that case we kill the currently running service create the new desired socket
-            if(binder == null) {
+            if (binder == null) {
                 mContext.stopService(new Intent(mContext, TCPSocketService.class));
                 mContext.startService(getServerFromSettings());
                 mContext.bindService(getServerFromSettings(), this,

@@ -8,7 +8,7 @@ import android.util.Log;
 
 import computeythings.garagemonitor.R;
 
-public class UIActivity extends AppCompatActivity {
+public class UIActivity extends AppCompatActivity implements AddServerDialog.OnServerAddedListener {
     private static final String TAG = "MAIN_ACTIVITY";
     UIFragment mUIFragment;
 
@@ -33,5 +33,10 @@ public class UIActivity extends AppCompatActivity {
             e.printStackTrace();
             super.onBackPressed();
         }
+    }
+
+    @Override
+    public void onServerAdded(boolean isFirstServer) {
+        mUIFragment.updateServerList();
     }
 }

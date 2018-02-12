@@ -4,14 +4,14 @@
     tools:showIn="navigation_view">
 
     <item android:title="Servers">
-        <menu>
-            <item
-                android:id="@+id/no_servers"
-                android:title="No servers" />
-        </menu>
+            <menu>
+                <item
+                    android:id="@+id/no_servers"
+                    android:title="No servers" />
+            </menu>
     </item>
 
-    <group android:checkableBehavior="single">
+    <group android:checkableBehavior="none">
         <item
             android:id="@+id/add_server_option"
             android:icon="@drawable/ic_add_black_36dp"

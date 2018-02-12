@@ -45,7 +45,7 @@ public class TCPSocketService extends IntentService {
     public static final String SOCKET_CLOSE = "KILL";
     public static final String GARAGE_OPEN = "OPEN_GARAGE";
     public static final String GARAGE_CLOSE = "CLOSE_GARAGE";
-    public static final String SERVER_NAME =
+    public static final String SERVER_ADDRESS =
             "computeythings.garagemonitor.services.TCPSocketService.SERVER";
     public static final String API_KEY =
             "computeythings.garagemonitor.services.TCPSocketService.API_KEY";
@@ -59,7 +59,7 @@ public class TCPSocketService extends IntentService {
             "computeythings.garagemonitor.services.TCPSocketService.DATA_PAYLOAD";
     public static final String SERVERSIDE_DISCONNECT =
             "computeythings.garagemonitor.services.TCPSocketService.SERVER_DISCONNECT";
-    private String mServerName;
+    private String mServerAddress;
     private String mApiKey;
     private int mPort;
     private int mCertID;
@@ -82,7 +82,7 @@ public class TCPSocketService extends IntentService {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         // Load in server properties
-        mServerName = intent.getStringExtra(SERVER_NAME);
+        mServerAddress = intent.getStringExtra(SERVER_ADDRESS);
         mApiKey = intent.getStringExtra(API_KEY);
         mPort = intent.getIntExtra(PORT_NUMBER, -1);
         mCertID = intent.getIntExtra(CERT_ID, -1);
@@ -94,7 +94,7 @@ public class TCPSocketService extends IntentService {
 
     @Override
     public IBinder onBind(Intent intent) {
-        if (!mServerName.equals(intent.getStringExtra(SERVER_NAME)) ||
+        if (!mServerAddress.equals(intent.getStringExtra(SERVER_ADDRESS)) ||
         !mApiKey.equals(intent.getStringExtra(API_KEY)) ||
         mPort != intent.getIntExtra(PORT_NUMBER, -1) ||
         mCertID != intent.getIntExtra(CERT_ID, -1)) {
@@ -103,7 +103,8 @@ public class TCPSocketService extends IntentService {
         }
         // Create new socket polling thread
         mReceiverThread = new DataReceiver(mBroadcaster);
-        mReceiverThread.execute(mSocketConnection);
+        // Run on Serial thread to make sure the socket has been created first
+        mReceiverThread.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, mSocketConnection);
         return mBinder;
     }
 
@@ -119,7 +120,7 @@ public class TCPSocketService extends IntentService {
         if(intent == null)
             return;
         // Do not start if values are still not valid
-        if (mServerName == null || mPort == -1 || mCertID == -1 || mApiKey == null) {
+        if (mServerAddress == null || mPort == -1 || mCertID == -1 || mApiKey == null) {
             Toast.makeText(this, "Invalid server values.", Toast.LENGTH_SHORT).show();
             stopSelf();
         }
@@ -165,8 +166,10 @@ public class TCPSocketService extends IntentService {
      */
     private void socketOpen() {
         try {
+            // Open socket on serial thread to make sure no action gets run on socket first
             mSocketConnection = new AsyncSocketCreator(createTrustManager().getSocketFactory())
-                    .execute(mServerName, mPort + "", mApiKey).get();
+                    .executeOnExecutor(AsyncTask.SERIAL_EXECUTOR,
+                            mServerAddress, mPort + "", mApiKey).get();
         } catch (InterruptedException | ExecutionException e) {
             Log.e(TAG, "Error creating socket");
         }
@@ -182,7 +185,7 @@ public class TCPSocketService extends IntentService {
             out.flush(); // Force flush to send data
             return true;
         } catch (IOException | NullPointerException e) {
-            Log.w(TAG, "Error writing to connection on " + mServerName);
+            Log.w(TAG, "Error writing to connection on " + mServerAddress + ":" + mPort);
             socketOpen(); // If socket is closed, data should be refreshed on reconnect.
         }
         return false;
@@ -192,7 +195,6 @@ public class TCPSocketService extends IntentService {
         Send a close message to server and kill socket connection.
      */
     public void socketClose() {
-        Log.d(TAG, "Closing socket connection");
         if (mSocketConnection != null && !mSocketConnection.isClosed()) {
             try {
                 OutputStream out = mSocketConnection.getOutputStream();
@@ -200,7 +202,7 @@ public class TCPSocketService extends IntentService {
                 out.flush(); // Force flush to send data
                 mSocketConnection.close(); // Close client side socket
             } catch (IOException e) {
-                Log.w(TAG, "Error writing to connection on " + mServerName);
+                Log.w(TAG, "Error writing to connection on " + mServerAddress);
             }
             mSocketConnection = null; // Delete dead socket
             if (mReceiverThread != null) {
@@ -226,7 +228,7 @@ public class TCPSocketService extends IntentService {
     @Override
     public void onDestroy() {
         // Close the current socket connection
-        new AsyncSocketClose().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, this);
+        new AsyncSocketClose().executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, this);
         super.onDestroy();
     }
 
@@ -268,6 +270,7 @@ public class TCPSocketService extends IntentService {
                 }
             } catch (IOException | NullPointerException e) {
                 Log.w(TAG, "Disconnected from server");
+                e.printStackTrace();
                 broadcastMessage(SERVERSIDE_DISCONNECT);
             }
             return null;

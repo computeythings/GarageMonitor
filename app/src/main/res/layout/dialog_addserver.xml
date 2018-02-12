@@ -5,22 +5,14 @@
     android:orientation="vertical">
 
     <TextView
-        android:id="@+id/add_server_dialog_title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:paddingBottom="20dp"
-        android:text="Add A Server" />
-
-    <TextView
         android:id="@+id/add_server_dialog_Nickname"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:labelFor="@id/server_nickname"
+        android:labelFor="@id/server_name_value"
         android:text="Connection name:" />
 
     <EditText
-        android:id="@+id/server_nickname"
+        android:id="@+id/server_name_value"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ems="10"
@@ -31,11 +23,11 @@
         android:id="@+id/add_server_dialog_address"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:labelFor="@+id/server_name_value"
+        android:labelFor="@+id/server_address_value"
         android:text="Server address:" />
 
     <EditText
-        android:id="@+id/server_name_value"
+        android:id="@+id/server_address_value"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ems="10"
