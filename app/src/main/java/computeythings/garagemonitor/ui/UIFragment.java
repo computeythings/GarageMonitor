@@ -85,6 +85,8 @@ public class UIFragment extends Fragment
         LocalBroadcastManager.getInstance(mContext).registerReceiver((mDataReceiver),
                 new IntentFilter(TCPSocketService.DATA_RECEIVED)
         );
+        Toolbar toolbar = mParentView.findViewById(R.id.toolbar);
+        toolbar.setTitle(mPreferences.getSelectedServer());
     }
 
     /*
