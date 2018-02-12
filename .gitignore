@@ -21,6 +21,3 @@
 # generated files
 bin/
 gen/
-
-# ignore SSL cert
-res/raw/
