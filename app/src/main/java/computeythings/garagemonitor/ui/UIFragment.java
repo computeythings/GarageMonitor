@@ -42,6 +42,8 @@ import computeythings.garagemonitor.preferences.ServerPreferences;
 import computeythings.garagemonitor.services.TCPSocketService;
 
 /**
+ * Main UI Fragment responsible for server setup and user interaction. Main body of code.
+ *
  * Created by bryan on 2/9/18.
  */
 
@@ -72,19 +74,25 @@ public class UIFragment extends Fragment
     public void onResume() {
         super.onResume();
 
+        // Try connecting to server
         serverConnect();
     }
 
+    /*
+        Connects to the last server that was connected by binding to the running TCPSocketService
+     */
     private void serverConnect() {
         if (mPreferences.getSelectedServer() == null)
-            return;
-        mConnection = new TCPServiceConnection();
+            return; // Quit if there is no valid server to connect to
+
         // Create and bind a socket service based on currently selected server
+        mConnection = new TCPServiceConnection();
         mContext.bindService(getServerFromSettings(), mConnection, Context.BIND_AUTO_CREATE);
         // Prepare to receive updates from this service
         LocalBroadcastManager.getInstance(mContext).registerReceiver((mDataReceiver),
                 new IntentFilter(TCPSocketService.DATA_RECEIVED)
         );
+        // Update toolbar title to reflect the currently selected server
         Toolbar toolbar = mParentView.findViewById(R.id.toolbar);
         toolbar.setTitle(mPreferences.getSelectedServer());
     }
@@ -94,7 +102,6 @@ public class UIFragment extends Fragment
      */
     private Intent getServerFromSettings() {
         Intent intent = new Intent(mContext, TCPSocketService.class);
-        //TODO: pull server settings from settings file
         try {
             JSONObject server = new JSONObject(mPreferences.getServerInfo(
                     mPreferences.getSelectedServer()));
@@ -114,22 +121,28 @@ public class UIFragment extends Fragment
         return null;
     }
 
+    /*
+        Create host view
+     */
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_main, container, false);
     }
 
+    /*
+        UI setup once the parent view is initialized
+     */
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
-        mParentView = view;
+        mParentView = view; // This will be the parent view for the lifetime of this fragment
 
-        // Toolbar setup
+        //Navigation Drawer setup
         Toolbar toolbar = mParentView.findViewById(R.id.toolbar);
         AppCompatActivity activity = (AppCompatActivity) getActivity();
         activity.setSupportActionBar(toolbar);
-        //Navigation Drawer setup
         mDrawer = mParentView.findViewById(R.id.drawer_layout);
+        // Add listener to toggle nav drawer from toolbar
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 activity, mDrawer, toolbar, R.string.navigation_drawer_open,
                 R.string.navigation_drawer_close);
@@ -158,8 +171,10 @@ public class UIFragment extends Fragment
         mDataReceiver = new TCPBroadcastReceiver();
     }
 
+    /*
+        Adds functionality to Open/Close/Refresh buttons
+     */
     private void buttonSetup() {
-        // Initialize Buttons
         FloatingActionButton refreshButton = mParentView.findViewById(R.id.refresh_fab);
         refreshOnClick(refreshButton);
         FloatingActionButton openButton = mParentView.findViewById(R.id.open_fab);
@@ -168,6 +183,9 @@ public class UIFragment extends Fragment
         writeMessageOnClick(closeButton, TCPSocketService.GARAGE_CLOSE);
     }
 
+    /*
+        Adds functionality to @param fab to write over the SSLSocket to request updated server info
+     */
     private void refreshOnClick(FloatingActionButton fab) {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -186,6 +204,9 @@ public class UIFragment extends Fragment
         });
     }
 
+    /*
+        Adds functionality to @param fab to write a custom message over the SSLSocket
+     */
     private void writeMessageOnClick(FloatingActionButton fab, final String message) {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -201,6 +222,9 @@ public class UIFragment extends Fragment
         });
     }
 
+    /*
+        Unbind service and broadcast receiver when the fragment is no longer active
+     */
     @Override
     public void onStop() {
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(mDataReceiver);
@@ -212,19 +236,23 @@ public class UIFragment extends Fragment
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         // todo: move to strings resource file
         String selected = item.getTitle().toString();
+        // Add server functionality
         if (selected.equals("Add Server")) {
             DialogFragment dialog = new AddServerDialog();
             dialog.show(getFragmentManager(), "new_server");
-        } else if (!selected.equals("No servers")) {
+        // Any other option will be a server
+        } else if (!selected.equals("No servers")) { // unless it is the "No Servers" info item
             String currentServer = mPreferences.getSelectedServer();
 
+            // Connect to the selected server
             if (currentServer == null) {
                 mPreferences.setSelectedServer(selected);
                 // start new service and connect
                 mContext.startService(getServerFromSettings());
                 serverConnect();
+            // Kill any existing server connections if they are available
             } else if (!currentServer.equals(selected)) {
-                // Kill the running service connect to a different server
+                // Kill the running service
                 mContext.unbindService(mConnection);
                 mContext.stopService(getServerFromSettings());
 
@@ -233,14 +261,19 @@ public class UIFragment extends Fragment
                 mContext.startService(getServerFromSettings());
                 serverConnect();
             }
+        // Don't close the drawer if an invalid option was selected
         } else {
-            return false;
+            return false; // Touch was not consumed
         }
 
+        // Close drawer
         mDrawer.closeDrawer(GravityCompat.START);
-        return true;
+        return true; // Touch was consumed
     }
 
+    /*
+        Adds edit/delete options menu to a menu item on long press
+     */
     @Override
     public boolean onLongClick(View view) {
         Log.d("DEBUG", "LONG PRESS REGISTERED");

@@ -6,7 +6,6 @@ import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.DialogFragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.TextView;
@@ -15,6 +14,9 @@ import computeythings.garagemonitor.R;
 import computeythings.garagemonitor.preferences.ServerPreferences;
 
 /**
+ * Dialog used to add and edit server settings. Upon adding a server, a callback is sent to the
+ * host UI activity.
+ *
  * Created by bryan on 2/10/18.
  */
 
@@ -64,7 +66,11 @@ public class AddServerDialog extends DialogFragment {
                 if(serverName.equals(""))
                     serverName = serverAddress;
 
+                // Store new server info in preferences
                 prefs.addServer(serverName, serverAddress, serverApiKey, serverPort, serverCert);
+
+                // Send callback to host activity setting param to true if it is the first server
+                // added to the application.
                 if(prefs.getServerList().size() == 1) {
                     prefs.setSelectedServer(serverName);
                     ((OnServerAddedListener) getHost()).onServerAdded(true);

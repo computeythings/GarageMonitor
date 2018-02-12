@@ -8,6 +8,13 @@ import android.util.Log;
 
 import computeythings.garagemonitor.R;
 
+/**
+ * Activity responsible for fragment running and communication. Responds to callbacks from
+ * AddServerDialog when new servers are updated and relays those callbacks to the UI fragment.
+ *
+ * Created by bryan on 2/9/18.
+ */
+
 public class UIActivity extends AppCompatActivity implements AddServerDialog.OnServerAddedListener {
     private static final String TAG = "MAIN_ACTIVITY";
     UIFragment mUIFragment;
@@ -19,6 +26,7 @@ public class UIActivity extends AppCompatActivity implements AddServerDialog.OnS
         mUIFragment = (UIFragment) getSupportFragmentManager().findFragmentById(R.id.ui_fragment);
     }
 
+    // If the app drawer is open, close that with back button.
     @Override
     public void onBackPressed() {
         try {
@@ -35,6 +43,7 @@ public class UIActivity extends AppCompatActivity implements AddServerDialog.OnS
         }
     }
 
+    // Alert the UI fragment that a new server has been added
     @Override
     public void onServerAdded(boolean isFirstServer) {
         mUIFragment.updateServerList(isFirstServer);
