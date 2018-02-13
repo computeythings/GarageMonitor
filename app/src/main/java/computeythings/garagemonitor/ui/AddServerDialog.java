@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.provider.OpenableColumns;
 import android.support.annotation.NonNull;
 import android.support.v4.app.DialogFragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -42,6 +43,7 @@ public class AddServerDialog extends DialogFragment {
     private TextView mPortField;
     private TextView mCertField;
     private String mCertURI;
+    private boolean isFormValid = false;
 
     public interface OnServerAddedListener {
         void onServerAdded(boolean isFirstServer);
@@ -81,25 +83,7 @@ public class AddServerDialog extends DialogFragment {
         builder.setPositiveButton(R.string.add, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
-                ServerPreferences prefs = new ServerPreferences(getContext());
-                String serverName = mNameField.getText().toString().trim();
-                String serverAddress = mAddressField.getText().toString().trim();
-                String serverApiKey = mAPIKeyField.getText().toString().trim();
-                int serverPort = Integer.parseInt(mPortField.getText().toString());
-
-                if (serverName.equals(""))
-                    serverName = serverAddress;
-
-                // Store new server info in preferences
-                prefs.addServer(serverName, serverAddress, serverApiKey, serverPort, mCertURI);
-
-                // Send callback to host activity setting param to true if it is the first server
-                // added to the application.
-                if (prefs.getServerList().size() == 1) {
-                    prefs.setSelectedServer(serverName);
-                    ((OnServerAddedListener) getHost()).onServerAdded(true);
-                } else
-                    ((OnServerAddedListener) getHost()).onServerAdded(false);
+                /* No implementation as it is overridden in onResume() */
             }
         })
                 .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
@@ -158,6 +142,60 @@ public class AddServerDialog extends DialogFragment {
         }
 
         return filename;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();    //super.onStart() is where dialog.show() is actually called on the underlying dialog, so we have to do it after this point
+        AlertDialog d = (AlertDialog) getDialog();
+        if (d != null) {
+            Button positiveButton = d.getButton(Dialog.BUTTON_POSITIVE);
+            positiveButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Log.d(TAG, "ADD BUTTON CLICKED");
+                    ServerPreferences prefs = new ServerPreferences(getContext());
+                    String serverName = mNameField.getText().toString().trim();
+                    String serverAddress = mAddressField.getText().toString().trim();
+                    String serverApiKey = mAPIKeyField.getText().toString().trim();
+                    String serverPort = mPortField.getText().toString();
+
+                    if (serverName.equals(""))
+                        serverName = serverAddress;
+                    if (serverPort.equals(""))
+                        serverPort = "4444";
+
+                    if (serverAddress.length() <= 0 || serverApiKey.length() <= 0 ||
+                            mCertField.getText().toString().length() <= 0) {
+                        if (serverApiKey.length() <= 0)
+                            mAPIKeyField.setError("This server requires an API key.");
+                        if (mCertField.getText().toString().length() <= 0)
+                            mCertField.setError("You must add a cert file.");
+                        if (serverAddress.length() <= 0)
+                            mAddressField.setError("You must add a server.");
+                        return;
+                    }
+                    isFormValid = true;
+
+                    // Store new server info in preferences
+                    prefs.addServer(serverName, serverAddress, serverApiKey,
+                            Integer.parseInt(serverPort), mCertURI);
+
+                    // Send callback to host activity setting param to true if it is the first server
+                    // added to the application.
+                    if (prefs.getServerList().size() == 1) {
+                        prefs.setSelectedServer(serverName);
+                        ((OnServerAddedListener) getHost()).onServerAdded(true);
+                    } else
+                        ((OnServerAddedListener) getHost()).onServerAdded(false);
+
+                    //Do stuff, possibly set wantToCloseDialog to true then...
+                    if (isFormValid)
+                        dismiss();
+                    //else dialog stays open. Make sure you have an obvious way to close the dialog especially if you set cancellable to false.
+                }
+            });
+        }
     }
 
 }

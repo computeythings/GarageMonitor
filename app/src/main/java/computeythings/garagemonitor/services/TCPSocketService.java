@@ -137,6 +137,10 @@ public class TCPSocketService extends IntentService {
             // Load ca from resource directory
             try (InputStream caInput = getContentResolver().openInputStream(Uri.parse(mCertLocation))) {
                 ca = cf.generateCertificate(caInput);
+            } catch (NullPointerException e) {
+                Log.d(TAG, "Invalid cert given");
+                e.printStackTrace();
+                return null;
             }
 
             // Create a KeyStore containing our trusted CAs
@@ -166,10 +170,13 @@ public class TCPSocketService extends IntentService {
      */
     private void socketOpen() {
         try {
-            mSocketConnection = new AsyncSocketCreator(createTrustManager().getSocketFactory())
+            SSLContext trust = createTrustManager();
+            if (trust == null)
+                return;
+            mSocketConnection = new AsyncSocketCreator(trust.getSocketFactory())
                     .executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,
                             mServerAddress, mPort + "", mApiKey).get();
-        } catch (InterruptedException | ExecutionException e) {
+        } catch (InterruptedException | ExecutionException | NullPointerException e) {
             Log.e(TAG, "Error creating socket");
         }
     }
@@ -218,7 +225,9 @@ public class TCPSocketService extends IntentService {
     public boolean onUnbind(Intent intent) {
         mReceiverThread.cancel(true);
         mReceiverThread = null; // kill dead thread
-        return mSocketConnection.isConnected(); // allow rebind as long as socket is open
+
+        // allow rebind as long as socket is open
+        return mSocketConnection != null && mSocketConnection.isConnected();
     }
 
     /*
