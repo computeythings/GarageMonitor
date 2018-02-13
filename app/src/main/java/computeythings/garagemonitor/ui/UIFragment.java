@@ -57,6 +57,7 @@ public class UIFragment extends Fragment
     private boolean mSocketBound;
     private ServiceConnection mConnection;
     private Menu mServerMenu;
+    SwipeRefreshLayout mSwipeRefreshLayout;
 
     protected DrawerLayout mDrawer;
     protected ServerPreferences mPreferences;
@@ -157,13 +158,12 @@ public class UIFragment extends Fragment
         updateServerList(false);
 
         //Setup swipe to refresh
-        final SwipeRefreshLayout swipeRefreshLayout = mParentView.findViewById(R.id.swipe_refresh);
-        swipeRefreshLayout.setOnRefreshListener(
+        mSwipeRefreshLayout = mParentView.findViewById(R.id.swipe_refresh);
+        mSwipeRefreshLayout.setOnRefreshListener(
                 new SwipeRefreshLayout.OnRefreshListener() {
                     @Override
                     public void onRefresh() {
-                        new AsyncSocketRefresh(swipeRefreshLayout).executeOnExecutor(
-                                AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
+                        refreshServer();
                     }
                 }
         );
@@ -191,18 +191,19 @@ public class UIFragment extends Fragment
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                SwipeRefreshLayout swipeRefreshLayout =
-                        mParentView.findViewById(R.id.swipe_refresh);
                 if (mSocketBound) {
-                    swipeRefreshLayout.setRefreshing(true);
-                    new AsyncSocketRefresh(swipeRefreshLayout).executeOnExecutor(
-                            AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
+                    refreshServer();
                 } else {
                     Toast.makeText(getContext(), "Server disconnected!",
                             Toast.LENGTH_LONG).show();
                 }
             }
         });
+    }
+
+    private void refreshServer() {
+        new AsyncSocketRefresh(mSwipeRefreshLayout).executeOnExecutor(
+                AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
     }
 
     /*
@@ -321,7 +322,7 @@ public class UIFragment extends Fragment
             mServerMenu.clear();
             for (String server : serverList) {
                 mServerMenu.add(server).setCheckable(true).setChecked(
-                        server.equals(mPreferences.getSelectedServer()));
+                                server.equals(mPreferences.getSelectedServer()));
             }
             if (isFirstServer) {
                 mContext.startService(getServerFromSettings());

@@ -68,6 +68,7 @@ public class TCPSocketService extends IntentService {
     private LocalBroadcastManager mBroadcaster;
     private DataReceiver mReceiverThread;
     private final SocketServiceBinder mBinder = new SocketServiceBinder();
+    private int mClients = 0;
 
     public TCPSocketService() {
         super("TCPSocketService");
@@ -95,7 +96,7 @@ public class TCPSocketService extends IntentService {
 
     @Override
     public IBinder onBind(Intent intent) {
-        if (!mServerAddress.equals(intent.getStringExtra(SERVER_ADDRESS)) ||
+        if (intent == null || !mServerAddress.equals(intent.getStringExtra(SERVER_ADDRESS)) ||
                 !mApiKey.equals(intent.getStringExtra(API_KEY)) ||
                 mPort != intent.getIntExtra(PORT_NUMBER, -1) ||
                 !mCertLocation.equals(intent.getStringExtra(CERT_ID))) {
@@ -105,6 +106,8 @@ public class TCPSocketService extends IntentService {
         // Create new socket polling thread
         mReceiverThread = new DataReceiver(mBroadcaster);
         mReceiverThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
+        mClients++;
+
         return mBinder;
     }
 
@@ -113,6 +116,7 @@ public class TCPSocketService extends IntentService {
         // Create new socket polling thread
         mReceiverThread = new DataReceiver(mBroadcaster);
         mReceiverThread.execute(mSocketConnection);
+        mClients++;
     }
 
     @Override
@@ -176,6 +180,10 @@ public class TCPSocketService extends IntentService {
             mSocketConnection = new AsyncSocketCreator(trust.getSocketFactory())
                     .executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,
                             mServerAddress, mPort + "", mApiKey).get();
+            if (mClients > 0) { // If the socket is being re-opened with bound clients
+                mReceiverThread = new DataReceiver(mBroadcaster);
+                mReceiverThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
+            }
         } catch (InterruptedException | ExecutionException | NullPointerException e) {
             Log.e(TAG, "Error creating socket");
         }
@@ -225,6 +233,7 @@ public class TCPSocketService extends IntentService {
     public boolean onUnbind(Intent intent) {
         mReceiverThread.cancel(true);
         mReceiverThread = null; // kill dead thread
+        mClients--;
 
         // allow rebind as long as socket is open
         return mSocketConnection != null && mSocketConnection.isConnected();
@@ -273,13 +282,13 @@ public class TCPSocketService extends IntentService {
                     if (data != null && !data.equals("")) {
                         publishProgress(data);
                     } else {
-                        throw new NullPointerException("Null socket connection to server");
+                        socket.close();
+                        broadcastMessage(SERVERSIDE_DISCONNECT);
                     }
                 }
             } catch (IOException | NullPointerException e) {
                 Log.w(TAG, "Disconnected from server");
                 e.printStackTrace();
-                broadcastMessage(SERVERSIDE_DISCONNECT);
             }
             return null;
         }
