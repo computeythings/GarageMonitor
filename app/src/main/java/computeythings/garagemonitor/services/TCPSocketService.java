@@ -172,11 +172,11 @@ public class TCPSocketService extends IntentService {
     /*
         Creates an SSL Socket connection to the server which the service was started with
      */
-    private void socketOpen() {
+    private boolean socketOpen() {
         try {
             SSLContext trust = createTrustManager();
             if (trust == null)
-                return;
+                return false;
             mSocketConnection = new AsyncSocketCreator(trust.getSocketFactory())
                     .executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,
                             mServerAddress, mPort + "", mApiKey).get();
@@ -184,9 +184,11 @@ public class TCPSocketService extends IntentService {
                 mReceiverThread = new DataReceiver(mBroadcaster);
                 mReceiverThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
             }
+            return mSocketConnection != null;
         } catch (InterruptedException | ExecutionException | NullPointerException e) {
             Log.e(TAG, "Error creating socket");
         }
+        return false;
     }
 
     /*
@@ -200,9 +202,8 @@ public class TCPSocketService extends IntentService {
             return true;
         } catch (IOException | NullPointerException e) {
             Log.w(TAG, "Error writing to connection on " + mServerAddress + ":" + mPort);
-            socketOpen(); // If socket is closed, data should be refreshed on reconnect.
+            return socketOpen(); // If socket is closed, data should be refreshed on reconnect.
         }
-        return false;
     }
 
     /*

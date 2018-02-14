@@ -34,6 +34,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import computeythings.garagemonitor.R;
 import computeythings.garagemonitor.async.AsyncSocketRefresh;
@@ -163,7 +164,9 @@ public class UIFragment extends Fragment
                 new SwipeRefreshLayout.OnRefreshListener() {
                     @Override
                     public void onRefresh() {
-                        refreshServer();
+                        if(!refreshServer())
+                            Toast.makeText(mContext, "Could not reach server for refresh.",
+                                    Toast.LENGTH_SHORT).show();
                     }
                 }
         );
@@ -192,7 +195,9 @@ public class UIFragment extends Fragment
             @Override
             public void onClick(View view) {
                 if (mSocketBound) {
-                    refreshServer();
+                    if(!refreshServer())
+                        Toast.makeText(mContext, "Could not reach server for refresh.",
+                                Toast.LENGTH_SHORT).show();
                 } else {
                     Toast.makeText(getContext(), "Server disconnected!",
                             Toast.LENGTH_LONG).show();
@@ -201,9 +206,15 @@ public class UIFragment extends Fragment
         });
     }
 
-    private void refreshServer() {
-        new AsyncSocketRefresh(mSwipeRefreshLayout).executeOnExecutor(
-                AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
+    private boolean refreshServer() {
+        try {
+            return new AsyncSocketRefresh(mSwipeRefreshLayout).executeOnExecutor(
+                            AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection).get();
+        } catch (InterruptedException | ExecutionException e) {
+            Log.e(TAG, "Refresh write interrupted.");
+            e.printStackTrace();
+        }
+        return false;
     }
 
     /*
@@ -214,14 +225,26 @@ public class UIFragment extends Fragment
             @Override
             public void onClick(View view) {
                 if (mSocketBound) {
-                    new AsyncSocketWriter(message).executeOnExecutor(
-                            AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
+                    if (!writeMessage(message))
+                        Toast.makeText(mContext, "Could not reach server.",
+                                Toast.LENGTH_SHORT).show();
                 } else {
                     Toast.makeText(getContext(), "Server disconnected!",
                             Toast.LENGTH_LONG).show();
                 }
             }
         });
+    }
+
+    private boolean writeMessage(String message) {
+        try {
+            return new AsyncSocketWriter(message).executeOnExecutor(
+                    AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection).get();
+        } catch (InterruptedException | ExecutionException e) {
+            Log.e(TAG, "Message write interrupted. Failed to write message: " + message);
+            e.printStackTrace();
+        }
+        return false;
     }
 
     /*
