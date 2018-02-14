@@ -280,18 +280,19 @@ public class TCPSocketService extends IntentService {
                 in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
                 while (socket.isConnected() && !isCancelled()) {
+                    Log.d("DEBUG", "newline");
                     data = in.readLine();
                     if (data != null && !data.equals("")) {
                         publishProgress(data);
                     } else {
                         socket.close();
-                        broadcastMessage(SERVERSIDE_DISCONNECT);
                     }
                 }
             } catch (IOException | NullPointerException e) {
                 Log.w(TAG, "Disconnected from server");
                 e.printStackTrace();
             }
+            broadcastMessage(SERVERSIDE_DISCONNECT);
             return null;
         }
 

@@ -356,8 +356,6 @@ public class UIFragment extends Fragment
      */
     @Override
     public void onPrepareOptionsMenu(Menu menu) {
-        Log.d("DEBUG", "PREPARING MENU " + mPreferences.getSelectedServer());
-
         // Hide server specific options if there is no selected server.
         menu.findItem(R.id.action_edit_server).setVisible(mPreferences.getSelectedServer() != null);
     }
