@@ -168,9 +168,13 @@ public class UIFragment extends Fragment
                 new SwipeRefreshLayout.OnRefreshListener() {
                     @Override
                     public void onRefresh() {
-                        if(!refreshServer())
+                        if(mPreferences.getSelectedServer() != null && !refreshServer()) {
                             Toast.makeText(mContext, "Could not reach server for refresh.",
                                     Toast.LENGTH_SHORT).show();
+                        } else {
+                            mSwipeRefreshLayout.setRefreshing(false);
+                        }
+
                     }
                 }
         );
@@ -199,11 +203,11 @@ public class UIFragment extends Fragment
             @Override
             public void onClick(View view) {
                 if (mSocketBound) {
-                    if(!refreshServer())
+                    if(mPreferences.getSelectedServer() != null && !refreshServer())
                         Toast.makeText(mContext, "Could not reach server for refresh.",
                                 Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(getContext(), "Server disconnected!",
+                    Toast.makeText(getContext(), "No server connected.",
                             Toast.LENGTH_LONG).show();
                 }
             }
@@ -229,11 +233,11 @@ public class UIFragment extends Fragment
             @Override
             public void onClick(View view) {
                 if (mSocketBound) {
-                    if (!writeMessage(message))
+                    if (mPreferences.getSelectedServer() != null && !writeMessage(message))
                         Toast.makeText(mContext, "Could not reach server.",
                                 Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(getContext(), "Server disconnected!",
+                    Toast.makeText(getContext(), "No server connected.",
                             Toast.LENGTH_LONG).show();
                 }
             }
