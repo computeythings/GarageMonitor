@@ -202,7 +202,8 @@ public class TCPSocketService extends IntentService {
             return true;
         } catch (IOException | NullPointerException e) {
             Log.w(TAG, "Error writing to connection on " + mServerAddress + ":" + mPort);
-            return socketOpen(); // If socket is closed, data should be refreshed on reconnect.
+            // If socket is closed, attempt to reopen and resend message.
+            return socketOpen() && socketWrite(message);
         }
     }
 
