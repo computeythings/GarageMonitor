@@ -24,6 +24,7 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -37,6 +38,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import computeythings.garagemonitor.R;
+import computeythings.garagemonitor.async.AsyncSocketClose;
 import computeythings.garagemonitor.async.AsyncSocketRefresh;
 import computeythings.garagemonitor.async.AsyncSocketWriter;
 import computeythings.garagemonitor.preferences.ServerPreferences;
@@ -49,7 +51,7 @@ import computeythings.garagemonitor.services.TCPSocketService;
  */
 
 public class UIFragment extends Fragment
-        implements NavigationView.OnNavigationItemSelectedListener, View.OnLongClickListener {
+        implements NavigationView.OnNavigationItemSelectedListener {
     private static final String TAG = "UI_Fragment";
     private Context mContext;
     private View mParentView;
@@ -71,6 +73,8 @@ public class UIFragment extends Fragment
 
         if (mPreferences.getSelectedServer() != null)
             mContext.startService(getServerFromSettings());
+
+        setHasOptionsMenu(true); // Enable settings menu
     }
 
     @Override
@@ -252,10 +256,9 @@ public class UIFragment extends Fragment
      */
     @Override
     public void onDestroy() {
-        super.onDestroy();
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(mDataReceiver);
         mContext.unbindService(mConnection);
-        super.onStop();
+        super.onDestroy();
     }
 
     @Override
@@ -266,8 +269,8 @@ public class UIFragment extends Fragment
         if (selected.equals("Add Server")) {
             DialogFragment dialog = new AddServerDialog();
             dialog.show(getFragmentManager(), "new_server");
-            // Any other option will be a server
-        } else if (!selected.equals("No servers")) { // unless it is the "No Servers" info item
+            // Any other option will be a server unless it is the empty server placeholder item
+        } else if (!selected.equals(getResources().getString(R.string.empty_server_menu))) {
             String currentServer = mPreferences.getSelectedServer();
 
             // Connect to the selected server
@@ -299,59 +302,99 @@ public class UIFragment extends Fragment
     }
 
     /*
-        Adds edit/delete options menu to a menu item on long press
-     */
-    @Override
-    public boolean onLongClick(View view) {
-        Log.d("DEBUG", "LONG PRESS REGISTERED");
-        if (view instanceof MenuItem) {
-            String selected = ((MenuItem) view).getTitle().toString();
-            if (mPreferences.getServerList().contains(selected)) {
-                try {
-                    JSONObject serverInfo = new JSONObject(mPreferences.getServerInfo(selected));
-
-                    DialogFragment dialog = new AddServerDialog();
-                    Bundle editInfo = new Bundle();
-
-                    editInfo.keySet().add(AddServerDialog.EDIT_KEY);
-                    editInfo.putString(AddServerDialog.EDIT_NAME,
-                            serverInfo.getString(ServerPreferences.SERVER_NAME));
-                    editInfo.putString(AddServerDialog.EDIT_ADDRESS,
-                            serverInfo.getString(ServerPreferences.SERVER_ADDRESS));
-                    editInfo.putString(AddServerDialog.EDIT_API_KEY,
-                            serverInfo.getString(ServerPreferences.SERVER_API_KEY));
-                    editInfo.putInt(AddServerDialog.EDIT_PORT,
-                            serverInfo.getInt(ServerPreferences.SERVER_PORT));
-
-                    dialog.setArguments(editInfo);
-                    dialog.show(getFragmentManager(), "new_server");
-                } catch (JSONException e) {
-                    Log.e(TAG, "Invalid server info received");
-                    e.printStackTrace();
-                    return false;
-                }
-            }
-            return true;
-        }
-        return false;
-    }
-
-    /*
         Updates the server list to the most current state
      */
     public void updateServerList(boolean isFirstServer) {
+        mServerMenu.clear(); // Complete reset
+
+        // Add all the servers in saved server list
         Set<String> serverList = mPreferences.getServerList();
-        if (serverList.size() > 0) {
-            mServerMenu.clear();
+        if(serverList.size() > 0) {
             for (String server : serverList) {
                 mServerMenu.add(server).setCheckable(true).setChecked(
-                                server.equals(mPreferences.getSelectedServer()));
+                        server.equals(mPreferences.getSelectedServer()));
             }
             if (isFirstServer) {
                 mContext.startService(getServerFromSettings());
                 serverConnect();
             }
         }
+        else
+            mServerMenu.add(R.string.empty_server_menu); // Placeholder if there are no servers
+    }
+
+    public void serverDeleted() {
+        // Remove all traces of current server and its connection
+        mContext.unbindService(mConnection);
+        mConnection = null;
+        mSocketConnection = null;
+        mContext.stopService(getServerFromSettings());
+        mPreferences.removeServer(mPreferences.getSelectedServer());
+        new AsyncSocketClose().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
+        Toolbar toolbar = mParentView.findViewById(R.id.toolbar);
+        toolbar.setTitle(R.string.app_name);
+
+        // Update the server list
+        updateServerList(false);
+    }
+
+    /*
+        Triple dot menu creation
+     */
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        inflater.inflate(R.menu.settings, menu);
+    }
+
+    /*
+        Run ever time the triple dot menu is made visible
+     */
+    @Override
+    public void onPrepareOptionsMenu(Menu menu) {
+        Log.d("DEBUG", "PREPARING MENU " + mPreferences.getSelectedServer());
+
+        // Hide server specific options if there is no selected server.
+        menu.findItem(R.id.action_edit_server).setVisible(mPreferences.getSelectedServer() != null);
+    }
+
+    /*
+        Executed on triple dot menu item selection
+     */
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        if (id == R.id.action_edit_server) {
+            try {
+                JSONObject serverInfo = new JSONObject(
+                        mPreferences.getServerInfo(mPreferences.getSelectedServer()));
+
+                DialogFragment dialog = new AddServerDialog();
+                Bundle editInfo = new Bundle();
+
+                editInfo.putString(AddServerDialog.EDIT_NAME,
+                        serverInfo.getString(ServerPreferences.SERVER_NAME));
+                editInfo.putString(AddServerDialog.EDIT_ADDRESS,
+                        serverInfo.getString(ServerPreferences.SERVER_ADDRESS));
+                editInfo.putString(AddServerDialog.EDIT_API_KEY,
+                        serverInfo.getString(ServerPreferences.SERVER_API_KEY));
+                editInfo.putString(AddServerDialog.EDIT_PORT,
+                        serverInfo.getString(ServerPreferences.SERVER_PORT));
+                editInfo.putString(AddServerDialog.EDIT_CERT,
+                        serverInfo.getString(ServerPreferences.SERVER_CERT));
+
+                dialog.setArguments(editInfo);
+                dialog.show(getFragmentManager(), "new_server");
+            } catch (JSONException e) {
+                Log.e(TAG, "Invalid server info received");
+                e.printStackTrace();
+                return false;
+            }
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 
     /*

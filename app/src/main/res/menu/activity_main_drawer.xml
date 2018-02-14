@@ -5,9 +5,6 @@
 
     <item android:title="Servers">
             <menu>
-                <item
-                    android:id="@+id/no_servers"
-                    android:title="No servers" />
             </menu>
     </item>
 

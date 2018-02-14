@@ -67,16 +67,19 @@ public class ServerPreferences {
 
     public boolean removeServer(String serverName) {
         Set<String> serverList = getServerList();
-        serverList.add(serverName);
 
         if (!serverList.contains(serverName))
             return true; // return true if the list doesn't already contain the server
 
 
-        serverList.remove(serverName);
+        serverList.remove(serverName); // remove server from server list
         SharedPreferences.Editor editor = mPrefs.edit();
-        editor.remove(serverName);
-        editor.putStringSet(SERVER_LIST, serverList);
+        editor.remove(serverName); // remove server key and its values
+        editor.putStringSet(SERVER_LIST, serverList); // write update server list
+
+        // If the server being removed is the current server, set current selected to null
+        if(mPrefs.getString(SELECTED_SERVER, "").equals(serverName))
+            editor.putString(SELECTED_SERVER, null);
 
         return editor.commit();
     }

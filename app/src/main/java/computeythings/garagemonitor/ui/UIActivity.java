@@ -15,7 +15,7 @@ import computeythings.garagemonitor.R;
  * Created by bryan on 2/9/18.
  */
 
-public class UIActivity extends AppCompatActivity implements AddServerDialog.OnServerAddedListener {
+public class UIActivity extends AppCompatActivity implements AddServerDialog.OnServerListChangeListener {
     private static final String TAG = "MAIN_ACTIVITY";
     UIFragment mUIFragment;
 
@@ -47,5 +47,10 @@ public class UIActivity extends AppCompatActivity implements AddServerDialog.OnS
     @Override
     public void onServerAdded(boolean isFirstServer) {
         mUIFragment.updateServerList(isFirstServer);
+    }
+
+    @Override
+    public void onServerDeleted() {
+        mUIFragment.serverDeleted();
     }
 }

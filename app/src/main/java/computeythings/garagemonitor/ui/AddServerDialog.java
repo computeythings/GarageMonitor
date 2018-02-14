@@ -6,6 +6,7 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.OpenableColumns;
@@ -29,7 +30,6 @@ import computeythings.garagemonitor.preferences.ServerPreferences;
 
 public class AddServerDialog extends DialogFragment {
     private static final String TAG = "ADD_SERVER_DIALOG";
-    public static final String EDIT_KEY = "IS_EDIT";
     public static final String EDIT_NAME = "EDIT_NAME";
     public static final String EDIT_ADDRESS = "EDIT_ADDRESS";
     public static final String EDIT_API_KEY = "EDIT_API_KEY";
@@ -37,6 +37,7 @@ public class AddServerDialog extends DialogFragment {
     public static final String EDIT_CERT = "EDIT_CERT";
     public static final int READ_REQUEST_CODE = 444;
 
+    ServerPreferences mPrefs;
     private TextView mNameField;
     private TextView mAPIKeyField;
     private TextView mAddressField;
@@ -45,13 +46,15 @@ public class AddServerDialog extends DialogFragment {
     private String mCertURI;
     private boolean isFormValid = false;
 
-    public interface OnServerAddedListener {
+    public interface OnServerListChangeListener {
         void onServerAdded(boolean isFirstServer);
+        void onServerDeleted();
     }
 
     @Override
     @NonNull
     public Dialog onCreateDialog(final Bundle savedInstanceState) {
+        Bundle args = getArguments();
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         LayoutInflater inflater = getActivity().getLayoutInflater();
 
@@ -72,20 +75,26 @@ public class AddServerDialog extends DialogFragment {
             }
         });
 
-        if (savedInstanceState != null && savedInstanceState.containsKey(EDIT_KEY)) {
-            mNameField.setText(savedInstanceState.getString(EDIT_NAME, ""));
-            mAddressField.setText(savedInstanceState.getString(EDIT_ADDRESS, ""));
-            mAPIKeyField.setText(savedInstanceState.getString(EDIT_API_KEY, ""));
-            mPortField.setText(savedInstanceState.getInt(EDIT_PORT, 4444));
-            mCertField.setText(savedInstanceState.getString(EDIT_CERT, ""));
+        if (args != null) {
+            mNameField.setText(args.getString(EDIT_NAME, ""));
+            mAddressField.setText(args.getString(EDIT_ADDRESS, ""));
+            mAPIKeyField.setText(args.getString(EDIT_API_KEY, ""));
+            mPortField.setText(args.getString(EDIT_PORT, ""));
+            mCertField.setText(getFilenameFromURI(Uri.parse(args.getString(EDIT_CERT, ""))));
+            builder.setNeutralButton(R.string.delete, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            confirmDelete((OnServerListChangeListener) getHost());
+                        }
+                    });
         }
 
         builder.setPositiveButton(R.string.add, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                /* No implementation as it is overridden in onResume() */
-            }
-        })
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        /* No implementation as it is overridden in onResume() */
+                    }
+                })
                 .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
@@ -146,15 +155,18 @@ public class AddServerDialog extends DialogFragment {
 
     @Override
     public void onResume() {
-        super.onResume();    //super.onStart() is where dialog.show() is actually called on the underlying dialog, so we have to do it after this point
-        AlertDialog d = (AlertDialog) getDialog();
-        if (d != null) {
-            Button positiveButton = d.getButton(Dialog.BUTTON_POSITIVE);
+        super.onResume();
+
+        // We have to define the onClick method for the positive button here in order to overwrite
+        // the default behavior to dismiss the dialog regardless of form validity.
+        AlertDialog self = (AlertDialog) getDialog();
+        if (self != null) {
+            Button positiveButton = self.getButton(Dialog.BUTTON_POSITIVE);
             positiveButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     Log.d(TAG, "ADD BUTTON CLICKED");
-                    ServerPreferences prefs = new ServerPreferences(getContext());
+                    mPrefs = new ServerPreferences(getContext());
                     String serverName = mNameField.getText().toString().trim();
                     String serverAddress = mAddressField.getText().toString().trim();
                     String serverApiKey = mAPIKeyField.getText().toString().trim();
@@ -178,16 +190,16 @@ public class AddServerDialog extends DialogFragment {
                     isFormValid = true;
 
                     // Store new server info in preferences
-                    prefs.addServer(serverName, serverAddress, serverApiKey,
+                    mPrefs.addServer(serverName, serverAddress, serverApiKey,
                             Integer.parseInt(serverPort), mCertURI);
 
                     // Send callback to host activity setting param to true if it is the first server
                     // added to the application.
-                    if (prefs.getServerList().size() == 1) {
-                        prefs.setSelectedServer(serverName);
-                        ((OnServerAddedListener) getHost()).onServerAdded(true);
+                    if (mPrefs.getServerList().size() == 1) {
+                        mPrefs.setSelectedServer(serverName);
+                        ((OnServerListChangeListener) getHost()).onServerAdded(true);
                     } else
-                        ((OnServerAddedListener) getHost()).onServerAdded(false);
+                        ((OnServerListChangeListener) getHost()).onServerAdded(false);
 
                     //Do stuff, possibly set wantToCloseDialog to true then...
                     if (isFormValid)
@@ -195,7 +207,20 @@ public class AddServerDialog extends DialogFragment {
                     //else dialog stays open. Make sure you have an obvious way to close the dialog especially if you set cancellable to false.
                 }
             });
+            Button neutralButton = self.getButton(Dialog.BUTTON_NEUTRAL);
+            neutralButton.setTextColor(Color.RED);
         }
     }
 
+    private void confirmDelete(final OnServerListChangeListener host) {
+        new AlertDialog.Builder(getContext())
+                .setTitle("Delete this server?")
+                .setMessage("Do you really want to delete this server?")
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        host.onServerDeleted();
+                    }})
+                .setNegativeButton(android.R.string.no, null).show();
+    }
 }
