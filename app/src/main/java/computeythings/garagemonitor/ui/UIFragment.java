@@ -43,7 +43,7 @@ import computeythings.garagemonitor.services.TCPSocketService;
 
 /**
  * Main UI Fragment responsible for server setup and user interaction. Main body of code.
- *
+ * <p>
  * Created by bryan on 2/9/18.
  */
 
@@ -56,6 +56,8 @@ public class UIFragment extends Fragment
     private TCPSocketService mSocketConnection;
     private boolean mSocketBound;
     private ServiceConnection mConnection;
+    private Menu mServerMenu;
+    SwipeRefreshLayout mSwipeRefreshLayout;
 
     protected DrawerLayout mDrawer;
     protected ServerPreferences mPreferences;
@@ -148,21 +150,20 @@ public class UIFragment extends Fragment
                 R.string.navigation_drawer_close);
         mDrawer.addDrawerListener(toggle);
         toggle.syncState();
-        NavigationView navigationView = mParentView.findViewById(R.id.nav_view);
-        navigationView.setNavigationItemSelectedListener(this);
-        navigationView.setOnLongClickListener(this);
+        NavigationView navDrawer = mParentView.findViewById(R.id.nav_view);
+        navDrawer.setNavigationItemSelectedListener(this);
+        mServerMenu = navDrawer.getMenu().getItem(0).getSubMenu();
 
         // Populate menu
         updateServerList(false);
 
         //Setup swipe to refresh
-        final SwipeRefreshLayout swipeRefreshLayout = mParentView.findViewById(R.id.swipe_refresh);
-        swipeRefreshLayout.setOnRefreshListener(
+        mSwipeRefreshLayout = mParentView.findViewById(R.id.swipe_refresh);
+        mSwipeRefreshLayout.setOnRefreshListener(
                 new SwipeRefreshLayout.OnRefreshListener() {
                     @Override
                     public void onRefresh() {
-                        new AsyncSocketRefresh(swipeRefreshLayout).executeOnExecutor(
-                                AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
+                        refreshServer();
                     }
                 }
         );
@@ -190,18 +191,19 @@ public class UIFragment extends Fragment
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                SwipeRefreshLayout swipeRefreshLayout =
-                        mParentView.findViewById(R.id.swipe_refresh);
                 if (mSocketBound) {
-                    swipeRefreshLayout.setRefreshing(true);
-                    new AsyncSocketRefresh(swipeRefreshLayout).executeOnExecutor(
-                            AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
+                    refreshServer();
                 } else {
                     Toast.makeText(getContext(), "Server disconnected!",
                             Toast.LENGTH_LONG).show();
                 }
             }
         });
+    }
+
+    private void refreshServer() {
+        new AsyncSocketRefresh(mSwipeRefreshLayout).executeOnExecutor(
+                AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
     }
 
     /*
@@ -241,7 +243,7 @@ public class UIFragment extends Fragment
         if (selected.equals("Add Server")) {
             DialogFragment dialog = new AddServerDialog();
             dialog.show(getFragmentManager(), "new_server");
-        // Any other option will be a server
+            // Any other option will be a server
         } else if (!selected.equals("No servers")) { // unless it is the "No Servers" info item
             String currentServer = mPreferences.getSelectedServer();
 
@@ -251,18 +253,19 @@ public class UIFragment extends Fragment
                 // start new service and connect
                 mContext.startService(getServerFromSettings());
                 serverConnect();
-            // Kill any existing server connections if they are available
+                // Kill any existing server connections if they are available
             } else if (!currentServer.equals(selected)) {
                 // Kill the running service
                 mContext.unbindService(mConnection);
                 mContext.stopService(getServerFromSettings());
 
                 mPreferences.setSelectedServer(selected);
+                updateServerList(false);
                 // start new service and connect
                 mContext.startService(getServerFromSettings());
                 serverConnect();
             }
-        // Don't close the drawer if an invalid option was selected
+            // Don't close the drawer if an invalid option was selected
         } else {
             return false; // Touch was not consumed
         }
@@ -314,16 +317,12 @@ public class UIFragment extends Fragment
         Updates the server list to the most current state
      */
     public void updateServerList(boolean isFirstServer) {
-        NavigationView nav = mParentView.findViewById(R.id.nav_view);
-        Menu menu = nav.getMenu().getItem(0).getSubMenu();
         Set<String> serverList = mPreferences.getServerList();
         if (serverList.size() > 0) {
-            menu.clear();
+            mServerMenu.clear();
             for (String server : serverList) {
-                if (server.equals(mPreferences.getSelectedServer()))
-                    menu.add(server).setCheckable(true).setChecked(true); // Check selected server
-                else
-                    menu.add(server).setCheckable(true);
+                mServerMenu.add(server).setCheckable(true).setChecked(
+                                server.equals(mPreferences.getSelectedServer()));
             }
             if (isFirstServer) {
                 mContext.startService(getServerFromSettings());
