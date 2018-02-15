@@ -60,6 +60,7 @@ public class UIFragment extends Fragment
     private boolean mSocketBound;
     private ServiceConnection mConnection;
     private Menu mServerMenu;
+    private Menu mSettingsMenu;
     SwipeRefreshLayout mSwipeRefreshLayout;
 
     protected DrawerLayout mDrawer;
@@ -168,7 +169,7 @@ public class UIFragment extends Fragment
                 new SwipeRefreshLayout.OnRefreshListener() {
                     @Override
                     public void onRefresh() {
-                        if(mPreferences.getSelectedServer() != null && !refreshServer()) {
+                        if (mPreferences.getSelectedServer() != null && !refreshServer()) {
                             Toast.makeText(mContext, "Could not reach server for refresh.",
                                     Toast.LENGTH_SHORT).show();
                         } else {
@@ -203,7 +204,7 @@ public class UIFragment extends Fragment
             @Override
             public void onClick(View view) {
                 if (mSocketBound) {
-                    if(mPreferences.getSelectedServer() != null && !refreshServer())
+                    if (mPreferences.getSelectedServer() != null && !refreshServer())
                         Toast.makeText(mContext, "Could not reach server for refresh.",
                                 Toast.LENGTH_SHORT).show();
                 } else {
@@ -217,7 +218,7 @@ public class UIFragment extends Fragment
     private boolean refreshServer() {
         try {
             return new AsyncSocketRefresh(mSwipeRefreshLayout).executeOnExecutor(
-                            AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection).get();
+                    AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection).get();
         } catch (InterruptedException | ExecutionException e) {
             Log.e(TAG, "Refresh write interrupted.");
             e.printStackTrace();
@@ -313,7 +314,7 @@ public class UIFragment extends Fragment
 
         // Add all the servers in saved server list
         Set<String> serverList = mPreferences.getServerList();
-        if(serverList.size() > 0) {
+        if (serverList.size() > 0) {
             for (String server : serverList) {
                 mServerMenu.add(server).setCheckable(true).setChecked(
                         server.equals(mPreferences.getSelectedServer()));
@@ -322,9 +323,10 @@ public class UIFragment extends Fragment
                 mContext.startService(getServerFromSettings());
                 serverConnect();
             }
-        }
-        else
+        } else
             mServerMenu.add(R.string.empty_server_menu); // Placeholder if there are no servers
+        if (mSettingsMenu != null)
+            this.onPrepareOptionsMenu(mSettingsMenu);
     }
 
     public void serverDeleted() {
@@ -349,6 +351,7 @@ public class UIFragment extends Fragment
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         // Inflate the menu; this adds items to the action bar if it is present.
         inflater.inflate(R.menu.settings, menu);
+        mSettingsMenu = menu;
     }
 
     /*
