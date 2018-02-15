@@ -1,8 +1,10 @@
 package computeythings.garagemonitor.ui;
 
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
@@ -182,6 +184,18 @@ public class UIFragment extends Fragment
 
         buttonSetup();
         mDataReceiver = new TCPBroadcastReceiver();
+
+        if(mPreferences.getServerList().size() == 0) {
+            new AlertDialog.Builder(getContext())
+                    .setTitle("No servers")
+                    .setMessage("It looks like you have no servers setup. " +
+                            "Would you like to set one up now?")
+                    .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int whichButton) {
+                            new AddServerDialog().show(getFragmentManager(), "new_server");
+                        }})
+                    .setNegativeButton("No", null).show();
+        }
     }
 
     /*
@@ -272,8 +286,7 @@ public class UIFragment extends Fragment
         String selected = item.getTitle().toString();
         // Add server functionality
         if (selected.equals("Add Server")) {
-            DialogFragment dialog = new AddServerDialog();
-            dialog.show(getFragmentManager(), "new_server");
+            new AddServerDialog().show(getFragmentManager(), "new_server");
             // Any other option will be a server unless it is the empty server placeholder item
         } else if (!selected.equals(getResources().getString(R.string.empty_server_menu))) {
             String currentServer = mPreferences.getSelectedServer();
