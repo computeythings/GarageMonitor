@@ -9,14 +9,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:labelFor="@id/server_name_value"
-        android:text="Connection name:" />
+        android:text="@string/server_name_label" />
 
     <EditText
         android:id="@+id/server_name_value"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ems="10"
-        android:hint="Optional"
+        android:hint="@string/optional"
         android:inputType="text" />
 
     <TextView
@@ -24,7 +24,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:labelFor="@+id/server_address_value"
-        android:text="Server address:" />
+        android:text="@string/server_address_label" />
 
     <EditText
         android:id="@+id/server_address_value"
@@ -38,7 +38,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:labelFor="@+id/apikey_value"
-        android:text="API Key:" />
+        android:text="@string/server_apikey_label" />
 
     <EditText
         android:id="@+id/apikey_value"
@@ -52,14 +52,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:labelFor="@+id/port_value"
-        android:text="Port:" />
+        android:text="@string/server_port_label" />
 
     <EditText
         android:id="@+id/port_value"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ems="10"
-        android:hint="Default: 4444"
+        android:hint="@string/server_port_hint"
         android:inputType="number" />
 
     <TextView
@@ -67,27 +67,29 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:labelFor="@+id/cert_value"
-        android:text="Cert Location:" />
+        android:text="@string/server_port_label" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
+
         <EditText
             android:id="@+id/cert_value"
-            android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:ems="10"
-            android:inputType="text"
+            android:layout_weight="1"
             android:editable="false"
+            android:ems="10"
             android:focusable="false"
-            android:scrollHorizontally="true"
-            android:maxLines="1"/>
+            android:inputType="text"
+            android:maxLines="1"
+            android:scrollHorizontally="true" />
+
         <Button
             android:id="@+id/cert_search_btn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Search"/>
+            android:text="@string/search" />
 
     </LinearLayout>
 </LinearLayout>
