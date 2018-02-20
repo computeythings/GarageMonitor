@@ -3,6 +3,7 @@
     <string name="navigation_drawer_open">Open</string>
     <string name="navigation_drawer_close">Close</string>
     <string name="empty_server_menu">No Servers</string>
+    <string name="drawable_description">Garage Status</string>
 
     <string name="server_name_label">Connection name:</string>
     <string name="server_address_label">Server address:</string>
@@ -11,6 +12,8 @@
     <string name="server_port_hint">Default: 4444</string>
     <string name="server_cert_label">Cert Location:</string>
 
+    <string name="server_menu_title">Servers</string>
+    <string name="add_server">Add Server</string>
     <string name="optional">Optional</string>
     <string name="search">Search</string>
     <string name="add">Add</string>

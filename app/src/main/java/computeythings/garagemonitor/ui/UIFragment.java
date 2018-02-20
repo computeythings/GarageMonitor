@@ -30,7 +30,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import org.json.JSONException;
@@ -64,6 +64,8 @@ public class UIFragment extends Fragment
     private Menu mServerMenu;
     private Menu mSettingsMenu;
     SwipeRefreshLayout mSwipeRefreshLayout;
+    private String mSavedState;
+    private boolean firstStart;
 
     protected DrawerLayout mDrawer;
     protected ServerPreferences mPreferences;
@@ -74,10 +76,22 @@ public class UIFragment extends Fragment
         mContext = context;
         mPreferences = new ServerPreferences(mContext);
 
-        if (mPreferences.getSelectedServer() != null)
-            mContext.startService(getServerFromSettings());
+        if(mConnection != null) {
+            mContext.bindService(getServerFromSettings(), mConnection, Context.BIND_AUTO_CREATE);
+            // Prepare to receive updates from this service
+            LocalBroadcastManager.getInstance(mContext).registerReceiver((mDataReceiver),
+                    new IntentFilter(TCPSocketService.DATA_RECEIVED)
+            );
+        }
+    }
 
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setRetainInstance(true); // Enable fragment persist on configuration change
         setHasOptionsMenu(true); // Enable settings menu
+        mDataReceiver = new TCPBroadcastReceiver();
+        firstStart = true;
     }
 
     @Override
@@ -85,7 +99,13 @@ public class UIFragment extends Fragment
         super.onResume();
 
         // Try connecting to server
-        serverConnect();
+        if(firstStart) {
+            if (mPreferences.getSelectedServer() != null)
+                mContext.startService(getServerFromSettings());
+
+            serverConnect();
+            firstStart = false;
+        }
     }
 
     /*
@@ -149,6 +169,8 @@ public class UIFragment extends Fragment
 
         //Navigation Drawer setup
         Toolbar toolbar = mParentView.findViewById(R.id.toolbar);
+        if(mPreferences.getSelectedServer() != null)
+            toolbar.setTitle(mPreferences.getSelectedServer());
         AppCompatActivity activity = (AppCompatActivity) getActivity();
         activity.setSupportActionBar(toolbar);
         mDrawer = mParentView.findViewById(R.id.drawer_layout);
@@ -183,9 +205,8 @@ public class UIFragment extends Fragment
         );
 
         buttonSetup();
-        mDataReceiver = new TCPBroadcastReceiver();
 
-        if(mPreferences.getServerList().size() == 0) {
+        if (mPreferences.getServerList().size() == 0) {
             new AlertDialog.Builder(getContext())
                     .setTitle("No servers")
                     .setMessage("It looks like you have no servers setup. " +
@@ -193,8 +214,30 @@ public class UIFragment extends Fragment
                     .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int whichButton) {
                             new AddServerDialog().show(getFragmentManager(), "new_server");
-                        }})
+                        }
+                    })
                     .setNegativeButton("No", null).show();
+        }
+
+        if(mSavedState != null) {
+            ImageView statusView = mParentView.findViewById(R.id.door_status);
+            switch (mSavedState) {
+                case "OPEN":
+                    statusView.setImageResource(R.drawable.garage_open);
+                    break;
+                case "CLOSED":
+                    statusView.setImageResource(R.drawable.garage_closed);
+                    break;
+                case "OPENING":
+                    statusView.setImageResource(R.drawable.garage_7_8);
+                    break;
+                case "CLOSING":
+                    statusView.setImageResource(R.drawable.garage_1_8);
+                    break;
+                default:
+                    statusView.setImageResource(R.drawable.garage_5_8);
+
+            }
         }
     }
 
@@ -274,10 +317,10 @@ public class UIFragment extends Fragment
         Unbind service and broadcast receiver when the fragment is no longer active
      */
     @Override
-    public void onDestroy() {
+    public void onDetach() {
+        super.onDetach();
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(mDataReceiver);
         mContext.unbindService(mConnection);
-        super.onDestroy();
     }
 
     @Override
@@ -456,36 +499,47 @@ public class UIFragment extends Fragment
     private class TCPBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
+            Log.d("DEBUG", "MESSAGE RECEIVED");
             String status = intent.getStringExtra(TCPSocketService.DATA);
             // Don't run if there is no view or status text does not exist
-            if (getView() == null || status == null)
+            if (mParentView == null || status == null)
                 return;
 
-            TextView statusView = getView().findViewById(R.id.door_status);
+            ImageView statusView = mParentView.findViewById(R.id.door_status);
             if (status.equals(TCPSocketService.SERVERSIDE_DISCONNECT)) {
                 //TODO: Server reconnect retry
-                statusView.setText("CANNOT CONNECT TO SERVER");
+                Log.d(TAG, "Received server-side disconnect");
+                statusView.setImageResource(R.drawable.garage_closed); // TODO: REPLACE WITH GARAGE_DISCONNECTED DRAWABLE
             } else {
                 // Data should always be received as a JSON String from the server
                 try {
                     JSONObject json = new JSONObject(status);
-
-                    if ((Boolean) json.get("OPEN"))
-                        status = "OPEN";
-                    else if ((Boolean) json.get("CLOSED"))
-                        status = "CLOSED";
-                    else if ((Boolean) json.get("CLOSING"))
-                        status = "CLOSING";
-                    else if ((Boolean) json.get("OPENING"))
-                        status = "OPENING";
-                    else
-                        status = "NEITHER";
+                    Log.d("DEBUG", "SETTING STATUS IMAGE");
+                    if ((Boolean) json.get("OPEN")) {
+                        statusView.setImageResource(R.drawable.garage_open);
+                        mSavedState = "OPEN";
+                    }
+                    else if ((Boolean) json.get("CLOSED")) {
+                        statusView.setImageResource(R.drawable.garage_closed);
+                        mSavedState = "CLOSED";
+                    }
+                    else if ((Boolean) json.get("CLOSING")) {
+                        statusView.setImageResource(R.drawable.garage_1_8);
+                        mSavedState = "CLOSING";
+                    }
+                    else if ((Boolean) json.get("OPENING")) {
+                        statusView.setImageResource(R.drawable.garage_7_8);
+                        mSavedState = "OPENING";
+                    }
+                    else {
+                        statusView.setImageResource(R.drawable.garage_5_8);
+                        mSavedState = "NEITHER";
+                    }
                 } catch (JSONException e) {
                     Log.w(TAG, "Invalid JSON object: " + status);
                     e.printStackTrace();
-                    status = "Invalid data received.";
+                    statusView.setImageResource(R.drawable.garage_5_8);
                 }
-                statusView.setText(status);
             }
         }
     }

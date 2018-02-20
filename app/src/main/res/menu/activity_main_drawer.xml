@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:showIn="navigation_view">
 
-    <item android:title="Servers">
+    <item android:title="@string/server_menu_title">
             <menu>
             </menu>
     </item>
@@ -12,7 +12,7 @@
         <item
             android:id="@+id/add_server_option"
             android:icon="@drawable/ic_add_black_36dp"
-            android:title="Add Server" />
+            android:title="@string/add_server" />
     </group>
 
 </menu>
