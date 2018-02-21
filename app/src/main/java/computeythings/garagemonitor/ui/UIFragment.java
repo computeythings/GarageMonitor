@@ -234,17 +234,17 @@ public class UIFragment extends Fragment
                     statusView.setImageResource(R.drawable.garage_closed);
                     break;
                 case "OPENING":
-                    statusView.setImageResource(R.drawable.garage_opening);
+                    statusView.setImageResource(R.drawable.garage_opening_animation);
                     ((AnimationDrawable) statusView.getDrawable()).start();
                     break;
                 case "CLOSING":
-                    statusView.setImageResource(R.drawable.garage_closing);
+                    statusView.setImageResource(R.drawable.garage_closing_animation);
                     ((AnimationDrawable) statusView.getDrawable()).start();
                     break;
                 case "NEITHER":
-                    statusView.setImageResource(R.drawable.garage_5_8); // TODO: REPLACE WITH GARAGE_MIDDLE DRAWABLE
+                    statusView.setImageResource(R.drawable.garage_middle);
                 default:
-                    statusView.setImageResource(R.drawable.garage_5_8); // TODO: REPLACE WITH GARAGE_DISCONNECTED DRAWABLE
+                    statusView.setImageResource(R.drawable.garage_disconnected);
 
             }
         }
