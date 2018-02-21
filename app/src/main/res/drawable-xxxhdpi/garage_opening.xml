@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animation-list xmlns:android="http://schemas.android.com/apk/res/android"
+    android:oneshot="false">
+    <item android:drawable="@drawable/garage_7_8" android:duration="400" />
+    <item android:drawable="@drawable/garage_5_8" android:duration="400" />
+    <item android:drawable="@drawable/garage_3_8" android:duration="400" />
+    <item android:drawable="@drawable/garage_1_8" android:duration="400" />
+    <item android:drawable="@drawable/garage_open" android:duration="700" />
+</animation-list>

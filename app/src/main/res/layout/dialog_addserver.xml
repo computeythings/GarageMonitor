@@ -67,7 +67,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:labelFor="@+id/cert_value"
-        android:text="@string/server_port_label" />
+        android:text="@string/server_cert_label" />
 
     <LinearLayout
         android:layout_width="match_parent"

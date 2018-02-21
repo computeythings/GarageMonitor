@@ -8,6 +8,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.graphics.drawable.AnimationDrawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -219,6 +220,10 @@ public class UIFragment extends Fragment
                     .setNegativeButton("No", null).show();
         }
 
+        refreshDrawable();
+    }
+
+    private void refreshDrawable() {
         if(mSavedState != null) {
             ImageView statusView = mParentView.findViewById(R.id.door_status);
             switch (mSavedState) {
@@ -229,13 +234,17 @@ public class UIFragment extends Fragment
                     statusView.setImageResource(R.drawable.garage_closed);
                     break;
                 case "OPENING":
-                    statusView.setImageResource(R.drawable.garage_7_8);
+                    statusView.setImageResource(R.drawable.garage_opening);
+                    ((AnimationDrawable) statusView.getDrawable()).start();
                     break;
                 case "CLOSING":
-                    statusView.setImageResource(R.drawable.garage_1_8);
+                    statusView.setImageResource(R.drawable.garage_closing);
+                    ((AnimationDrawable) statusView.getDrawable()).start();
                     break;
+                case "NEITHER":
+                    statusView.setImageResource(R.drawable.garage_5_8); // TODO: REPLACE WITH GARAGE_MIDDLE DRAWABLE
                 default:
-                    statusView.setImageResource(R.drawable.garage_5_8);
+                    statusView.setImageResource(R.drawable.garage_5_8); // TODO: REPLACE WITH GARAGE_DISCONNECTED DRAWABLE
 
             }
         }
@@ -504,40 +513,35 @@ public class UIFragment extends Fragment
             if (mParentView == null || status == null)
                 return;
 
-            ImageView statusView = mParentView.findViewById(R.id.door_status);
             if (status.equals(TCPSocketService.SERVERSIDE_DISCONNECT)) {
                 //TODO: Server reconnect retry
                 Log.d(TAG, "Received server-side disconnect");
-                statusView.setImageResource(R.drawable.garage_closed); // TODO: REPLACE WITH GARAGE_DISCONNECTED DRAWABLE
+                mSavedState = "DISCONNECTED";
             } else {
                 // Data should always be received as a JSON String from the server
                 try {
                     JSONObject json = new JSONObject(status);
                     if ((Boolean) json.get("OPEN")) {
-                        statusView.setImageResource(R.drawable.garage_open);
                         mSavedState = "OPEN";
                     }
                     else if ((Boolean) json.get("CLOSED")) {
-                        statusView.setImageResource(R.drawable.garage_closed);
                         mSavedState = "CLOSED";
                     }
                     else if ((Boolean) json.get("CLOSING")) {
-                        statusView.setImageResource(R.drawable.garage_1_8);
                         mSavedState = "CLOSING";
                     }
                     else if ((Boolean) json.get("OPENING")) {
-                        statusView.setImageResource(R.drawable.garage_7_8);
                         mSavedState = "OPENING";
                     }
                     else {
-                        statusView.setImageResource(R.drawable.garage_5_8);
                         mSavedState = "NEITHER";
                     }
                 } catch (JSONException e) {
                     Log.w(TAG, "Invalid JSON object: " + status);
                     e.printStackTrace();
-                    statusView.setImageResource(R.drawable.garage_5_8);
+                    mSavedState = "NEITHER";
                 }
+                refreshDrawable();
             }
         }
     }
