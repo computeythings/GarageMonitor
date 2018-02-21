@@ -499,7 +499,6 @@ public class UIFragment extends Fragment
     private class TCPBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.d("DEBUG", "MESSAGE RECEIVED");
             String status = intent.getStringExtra(TCPSocketService.DATA);
             // Don't run if there is no view or status text does not exist
             if (mParentView == null || status == null)
@@ -514,7 +513,6 @@ public class UIFragment extends Fragment
                 // Data should always be received as a JSON String from the server
                 try {
                     JSONObject json = new JSONObject(status);
-                    Log.d("DEBUG", "SETTING STATUS IMAGE");
                     if ((Boolean) json.get("OPEN")) {
                         statusView.setImageResource(R.drawable.garage_open);
                         mSavedState = "OPEN";
