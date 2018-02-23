@@ -35,6 +35,7 @@ public class AddServerDialog extends DialogFragment {
     public static final String EDIT_API_KEY = "EDIT_API_KEY";
     public static final String EDIT_PORT = "EDIT_PORT";
     public static final String EDIT_CERT = "EDIT_CERT";
+    public static final String USE_CURRENT = "USE_CURRENT";
     public static final int READ_REQUEST_CODE = 444;
 
     ServerPreferences mPrefs;
@@ -75,33 +76,43 @@ public class AddServerDialog extends DialogFragment {
             }
         });
 
-        if (args != null) {
+        if (args != null) { // args are null on add and initialized on edit
             mNameField.setText(args.getString(EDIT_NAME, ""));
             mAddressField.setText(args.getString(EDIT_ADDRESS, ""));
             mAPIKeyField.setText(args.getString(EDIT_API_KEY, ""));
             mPortField.setText(args.getString(EDIT_PORT, ""));
             mCertField.setText(getFilenameFromURI(Uri.parse(args.getString(EDIT_CERT, ""))));
+
+            mCertURI = USE_CURRENT;
+
             builder.setNeutralButton(R.string.delete, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
                             confirmDelete((OnServerListChangeListener) getHost());
                         }
                     });
+            builder.setPositiveButton(R.string.update, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                        /* No implementation as it is overridden in onResume() */
+                }
+            });
+        } else {
+            builder.setPositiveButton(R.string.add, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                        /* No implementation as it is overridden in onResume() */
+                }
+            });
         }
 
-        builder.setPositiveButton(R.string.add, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        /* No implementation as it is overridden in onResume() */
-                    }
-                })
-                .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        AddServerDialog.this.getDialog().cancel();
-                    }
-                })
-                .setTitle("Add a Server");
+        builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                AddServerDialog.this.getDialog().cancel();
+            }
+        })
+        .setTitle("Add a Server");
         return builder.create();
     }
 
@@ -170,19 +181,19 @@ public class AddServerDialog extends DialogFragment {
                     String serverName = mNameField.getText().toString().trim();
                     String serverAddress = mAddressField.getText().toString().trim();
                     String serverApiKey = mAPIKeyField.getText().toString().trim();
-                    String serverPort = mPortField.getText().toString();
+                    String serverPort = mPortField.getText().toString().trim();
+                    String certLocation = mCertField.getText().toString().trim();
 
                     if (serverName.equals(""))
                         serverName = serverAddress;
                     if (serverPort.equals(""))
                         serverPort = "4444";
+                    if (certLocation.equals(""))
+                        mCertURI = certLocation;
 
-                    if (serverAddress.length() <= 0 || serverApiKey.length() <= 0 ||
-                            mCertField.getText().toString().length() <= 0) {
+                    if (serverAddress.length() <= 0 || serverApiKey.length() <= 0) {
                         if (serverApiKey.length() <= 0)
                             mAPIKeyField.setError("This server requires an API key.");
-                        if (mCertField.getText().toString().length() <= 0)
-                            mCertField.setError("You must add a cert file.");
                         if (serverAddress.length() <= 0)
                             mAddressField.setError("You must add a server.");
                         return;

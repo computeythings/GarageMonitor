@@ -22,7 +22,10 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
     private SSLSocketFactory mSocketFactory;
 
     public AsyncSocketCreator(SSLSocketFactory socketFactory) {
-        mSocketFactory = socketFactory; // created from self-signed cert
+        if (socketFactory != null)
+            mSocketFactory = socketFactory; // created from self-signed cert
+        else
+            mSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
     }
 
     @Override

@@ -73,9 +73,9 @@ public class UIFragment extends Fragment
 
     @Override
     public void onAttach(Context context) {
-        super.onAttach(context);
         mContext = context;
         mPreferences = new ServerPreferences(mContext);
+        mSavedState = "DISCONNECTED";
 
         if(mConnection != null) {
             mContext.bindService(getServerFromSettings(), mConnection, Context.BIND_AUTO_CREATE);
@@ -84,6 +84,7 @@ public class UIFragment extends Fragment
                     new IntentFilter(TCPSocketService.DATA_RECEIVED)
             );
         }
+        super.onAttach(context);
     }
 
     @Override
@@ -126,6 +127,7 @@ public class UIFragment extends Fragment
         // Update toolbar title to reflect the currently selected server
         Toolbar toolbar = mParentView.findViewById(R.id.toolbar);
         toolbar.setTitle(mPreferences.getSelectedServer());
+        refreshDrawable();
     }
 
     /*
@@ -351,6 +353,7 @@ public class UIFragment extends Fragment
                 serverConnect();
                 // Kill any existing server connections if they are available
             } else if (!currentServer.equals(selected)) {
+                mSavedState = "DISCONNECTED";
                 // Kill the running service
                 mContext.unbindService(mConnection);
                 mContext.stopService(getServerFromSettings());

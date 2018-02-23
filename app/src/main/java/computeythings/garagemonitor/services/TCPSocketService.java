@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutionException;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
 
 import computeythings.garagemonitor.async.AsyncSocketClose;
@@ -83,10 +84,15 @@ public class TCPSocketService extends IntentService {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         // Load in server properties
-        mServerAddress = intent.getStringExtra(SERVER_ADDRESS);
-        mApiKey = intent.getStringExtra(API_KEY);
-        mPort = intent.getIntExtra(PORT_NUMBER, -1);
-        mCertLocation = intent.getStringExtra(CERT_ID);
+        try {
+            mServerAddress = intent.getStringExtra(SERVER_ADDRESS);
+            mApiKey = intent.getStringExtra(API_KEY);
+            mPort = intent.getIntExtra(PORT_NUMBER, -1);
+            mCertLocation = intent.getStringExtra(CERT_ID);
+        } catch (NullPointerException e) {
+            Log.e(TAG, "Missing server components");
+            e.printStackTrace();
+        }
 
         // Open socket with new server properties
         socketOpen();
@@ -125,8 +131,7 @@ public class TCPSocketService extends IntentService {
     /*
         Creates trust manager using self signed certs stored in raw resources directory
      */
-    private SSLContext createTrustManager() {
-        SSLContext context = null;
+    private SSLSocketFactory createSocketFactory() {
         try {
             CertificateFactory cf = CertificateFactory.getInstance("X.509");
             Certificate ca;
@@ -151,14 +156,15 @@ public class TCPSocketService extends IntentService {
             tmf.init(keyStore);
 
             // Create an SSLContext that uses our TrustManager
-            context = SSLContext.getInstance("TLS");
+            SSLContext context = SSLContext.getInstance("TLS");
             context.init(null, tmf.getTrustManagers(), new SecureRandom());
+            return context.getSocketFactory();
         } catch (IOException | KeyManagementException | KeyStoreException |
                 NoSuchAlgorithmException | CertificateException e) {
             e.printStackTrace();
             Log.e(TAG, "Error with trust manager");
         }
-        return context;
+        return null;
     }
 
     /*
@@ -166,10 +172,7 @@ public class TCPSocketService extends IntentService {
      */
     private boolean socketOpen() {
         try {
-            SSLContext trust = createTrustManager();
-            if (trust == null)
-                return false;
-            mSocketConnection = new AsyncSocketCreator(trust.getSocketFactory())
+            mSocketConnection = new AsyncSocketCreator(createSocketFactory())
                     .executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,
                             mServerAddress, mPort + "", mApiKey).get();
             mReceiverThread = new DataReceiver(mBroadcaster);

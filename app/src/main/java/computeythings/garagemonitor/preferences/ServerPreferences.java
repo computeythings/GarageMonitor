@@ -10,6 +10,8 @@ import org.json.JSONObject;
 import java.util.HashSet;
 import java.util.Set;
 
+import computeythings.garagemonitor.ui.AddServerDialog;
+
 /**
  * Class used to interact with the apps saved preferences
  * <p>
@@ -44,7 +46,8 @@ public class ServerPreferences {
             json.put(SERVER_ADDRESS, address);
             json.put(SERVER_API_KEY, apikey);
             json.put(SERVER_PORT, port);
-            json.put(SERVER_CERT, certLocation);
+            if(!certLocation.equals(AddServerDialog.USE_CURRENT)) // don't change cert location
+                json.put(SERVER_CERT, certLocation);
         } catch (JSONException e) {
             Log.e(TAG, "Unexpected JSON error");
             e.printStackTrace();
