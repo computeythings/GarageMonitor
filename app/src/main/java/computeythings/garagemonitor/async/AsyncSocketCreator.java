@@ -7,6 +7,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
@@ -46,6 +50,28 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
             Log.e(TAG, "Error creating socket to " + server + " on socket " + port);
             e.printStackTrace();
         }
+
+        // Verify hostname and close socket if there isn't a match
+        if (socket != null) {
+            HostnameVerifier verifier = HttpsURLConnection.getDefaultHostnameVerifier();
+            SSLSession session = socket.getSession();
+            if (!verifier.verify("GarageOpener", session)) {
+                try {
+                    Log.e(TAG,"Expected " + server + ", found " + session.getPeerPrincipal());
+                } catch (SSLPeerUnverifiedException e) {
+                    Log.e(TAG, "Expected " + server + ", found " + session.getPeerHost());
+                }
+
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                    Log.e(TAG, "Could not close socket.");
+                    e.printStackTrace();
+                }
+                socket = null;
+            }
+        }
+
         return socket;
     }
 }

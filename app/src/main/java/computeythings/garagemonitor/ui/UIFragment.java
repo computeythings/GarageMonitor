@@ -38,7 +38,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 
 import computeythings.garagemonitor.R;
 import computeythings.garagemonitor.async.AsyncSocketClose;
@@ -77,7 +76,7 @@ public class UIFragment extends Fragment
         mPreferences = new ServerPreferences(mContext);
         mSavedState = "DISCONNECTED";
 
-        if(mConnection != null) {
+        if (mConnection != null) {
             mContext.bindService(getServerFromSettings(), mConnection, Context.BIND_AUTO_CREATE);
             // Prepare to receive updates from this service
             LocalBroadcastManager.getInstance(mContext).registerReceiver((mDataReceiver),
@@ -101,7 +100,7 @@ public class UIFragment extends Fragment
         super.onResume();
 
         // Try connecting to server
-        if(firstStart) {
+        if (firstStart) {
             if (mPreferences.getSelectedServer() != null)
                 mContext.startService(getServerFromSettings());
 
@@ -172,7 +171,7 @@ public class UIFragment extends Fragment
 
         //Navigation Drawer setup
         Toolbar toolbar = mParentView.findViewById(R.id.toolbar);
-        if(mPreferences.getSelectedServer() != null)
+        if (mPreferences.getSelectedServer() != null)
             toolbar.setTitle(mPreferences.getSelectedServer());
         AppCompatActivity activity = (AppCompatActivity) getActivity();
         activity.setSupportActionBar(toolbar);
@@ -196,9 +195,8 @@ public class UIFragment extends Fragment
                 new SwipeRefreshLayout.OnRefreshListener() {
                     @Override
                     public void onRefresh() {
-                        if (mPreferences.getSelectedServer() != null && !refreshServer()) {
-                            Toast.makeText(mContext, "Could not reach server for refresh.",
-                                    Toast.LENGTH_SHORT).show();
+                        if (mPreferences.getSelectedServer() != null) {
+                            refreshServer();
                         } else {
                             mSwipeRefreshLayout.setRefreshing(false);
                         }
@@ -226,7 +224,7 @@ public class UIFragment extends Fragment
     }
 
     private void refreshDrawable() {
-        if(mSavedState != null) {
+        if (mSavedState != null) {
             ImageView statusView = mParentView.findViewById(R.id.door_status);
             switch (mSavedState) {
                 case "OPEN":
@@ -245,6 +243,7 @@ public class UIFragment extends Fragment
                     break;
                 case "NEITHER":
                     statusView.setImageResource(R.drawable.garage_middle);
+                    break;
                 default:
                     statusView.setImageResource(R.drawable.garage_disconnected);
 
@@ -272,9 +271,8 @@ public class UIFragment extends Fragment
             @Override
             public void onClick(View view) {
                 if (mSocketBound) {
-                    if (mPreferences.getSelectedServer() != null && !refreshServer())
-                        Toast.makeText(mContext, "Could not reach server for refresh.",
-                                Toast.LENGTH_SHORT).show();
+                    if (mPreferences.getSelectedServer() != null)
+                        refreshServer();
                 } else {
                     Toast.makeText(getContext(), "No server connected.",
                             Toast.LENGTH_LONG).show();
@@ -283,15 +281,9 @@ public class UIFragment extends Fragment
         });
     }
 
-    private boolean refreshServer() {
-        try {
-            return new AsyncSocketRefresh(mSwipeRefreshLayout).executeOnExecutor(
-                    AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection).get();
-        } catch (InterruptedException | ExecutionException e) {
-            Log.e(TAG, "Refresh write interrupted.");
-            e.printStackTrace();
-        }
-        return false;
+    private void refreshServer() {
+        new AsyncSocketRefresh(mContext, mSwipeRefreshLayout).executeOnExecutor(
+                AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
     }
 
     /*
@@ -302,9 +294,8 @@ public class UIFragment extends Fragment
             @Override
             public void onClick(View view) {
                 if (mSocketBound) {
-                    if (mPreferences.getSelectedServer() != null && !writeMessage(message))
-                        Toast.makeText(mContext, "Could not reach server.",
-                                Toast.LENGTH_SHORT).show();
+                    if (mPreferences.getSelectedServer() != null)
+                        writeMessage(message);
                 } else {
                     Toast.makeText(getContext(), "No server connected.",
                             Toast.LENGTH_LONG).show();
@@ -313,15 +304,9 @@ public class UIFragment extends Fragment
         });
     }
 
-    private boolean writeMessage(String message) {
-        try {
-            return new AsyncSocketWriter(message).executeOnExecutor(
-                    AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection).get();
-        } catch (InterruptedException | ExecutionException e) {
-            Log.e(TAG, "Message write interrupted. Failed to write message: " + message);
-            e.printStackTrace();
-        }
-        return false;
+    private void writeMessage(String message) {
+        new AsyncSocketWriter(mContext, message).executeOnExecutor(
+                AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
     }
 
     /*
@@ -524,19 +509,17 @@ public class UIFragment extends Fragment
                 // Data should always be received as a JSON String from the server
                 try {
                     JSONObject json = new JSONObject(status);
+                    Log.d("DEBUG", json.toString());
                     if ((Boolean) json.get("OPEN")) {
                         mSavedState = "OPEN";
-                    }
-                    else if ((Boolean) json.get("CLOSED")) {
+                    } else if ((Boolean) json.get("CLOSED")) {
                         mSavedState = "CLOSED";
-                    }
-                    else if ((Boolean) json.get("CLOSING")) {
+                    } else if ((Boolean) json.get("CLOSING")) {
                         mSavedState = "CLOSING";
-                    }
-                    else if ((Boolean) json.get("OPENING")) {
+                    } else if ((Boolean) json.get("OPENING")) {
                         mSavedState = "OPENING";
-                    }
-                    else {
+                    } else {
+                        Log.d("DEBUG", "SETTING SAVED STATE TO NEITHER");
                         mSavedState = "NEITHER";
                     }
                 } catch (JSONException e) {

@@ -1,7 +1,11 @@
 package computeythings.garagemonitor.async;
 
+import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
+import android.widget.Toast;
+
+import java.lang.ref.WeakReference;
 
 import computeythings.garagemonitor.services.TCPSocketService;
 
@@ -9,20 +13,30 @@ import computeythings.garagemonitor.services.TCPSocketService;
  * Created by bryan on 2/6/18.
  */
 
-public class AsyncSocketWriter extends AsyncTask<TCPSocketService, Void, Boolean> {
+public class AsyncSocketWriter extends AsyncTask<TCPSocketService, Void, Void> {
     private static final String TAG = "SOCKET_WRITER";
+    private WeakReference<Context> mContext;
     private String mMessage;
+    private boolean mSuccessfulWrite;
 
-    public AsyncSocketWriter(String message) {
+    public AsyncSocketWriter(Context context, String message) {
+        mContext = new WeakReference<>(context);
         mMessage = message;
     }
 
     @Override
-    protected Boolean doInBackground(TCPSocketService... tcpSocketServices) {
+    protected Void doInBackground(TCPSocketService... tcpSocketServices) {
         if (tcpSocketServices.length != 1 || tcpSocketServices[0] == null) {
             Log.e(TAG, "Incorrect SocketHandler parameters");
-            return false;
         }
-        return tcpSocketServices[0].socketWrite(mMessage);
+        mSuccessfulWrite = tcpSocketServices[0].socketWrite(mMessage);
+        return null;
+    }
+
+    @Override
+    protected void onPostExecute(Void completed) {
+        if(!mSuccessfulWrite)
+            Toast.makeText(mContext.get(), "Could not reach server.",
+                    Toast.LENGTH_LONG).show();
     }
 }
