@@ -74,7 +74,6 @@ public class UIFragment extends Fragment
     public void onAttach(Context context) {
         mContext = context;
         mPreferences = new ServerPreferences(mContext);
-        mSavedState = "DISCONNECTED";
 
         if (mConnection != null) {
             mContext.bindService(getServerFromSettings(), mConnection, Context.BIND_AUTO_CREATE);
@@ -93,6 +92,7 @@ public class UIFragment extends Fragment
         setHasOptionsMenu(true); // Enable settings menu
         mDataReceiver = new TCPBroadcastReceiver();
         firstStart = true;
+        mSavedState = "DISCONNECTED";
     }
 
     @Override
