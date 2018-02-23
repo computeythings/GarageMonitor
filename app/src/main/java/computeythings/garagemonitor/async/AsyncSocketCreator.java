@@ -53,6 +53,27 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, Void> {
             Log.e(TAG, "Error creating socket to " + server + " on socket " + port);
             e.printStackTrace();
         }
+
+        // Verify hostname and close socket if there isn't a match
+        if (mSocket != null) {
+            HostnameVerifier verifier = HttpsURLConnection.getDefaultHostnameVerifier();
+            SSLSession session = mSocket.getSession();
+            if (!verifier.verify(server, session)) {
+                try {
+                    Log.e(TAG,"Expected " + server + ", found " + session.getPeerPrincipal());
+                } catch (SSLPeerUnverifiedException e) {
+                    Log.e(TAG, "Expected " + server + ", found " + session.getPeerHost());
+                }
+
+                try {
+                    mSocket.close();
+                } catch (IOException e) {
+                    Log.e(TAG, "Could not close socket.");
+                    e.printStackTrace();
+                }
+                mSocket = null;
+            }
+        }
         return null;
     }
 
