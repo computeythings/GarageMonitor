@@ -21,20 +21,23 @@ import computeythings.garagemonitor.services.TCPSocketService;
  * Created by bryan on 2/6/18.
  */
 
-public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
+public class AsyncSocketCreator extends AsyncTask<String, Void, Void> {
     private static final String TAG = "SOCKET_CREATOR";
+    private SSLSocket mSocket;
     private SSLSocketFactory mSocketFactory;
+    private TCPSocketService.SocketReadyListener mListener;
 
-    public AsyncSocketCreator(SSLSocketFactory socketFactory) {
+    public AsyncSocketCreator(SSLSocketFactory socketFactory,
+                              TCPSocketService.SocketReadyListener listener) {
         if (socketFactory != null)
             mSocketFactory = socketFactory; // created from self-signed cert
         else
             mSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+        mListener = listener;
     }
 
     @Override
-    protected SSLSocket doInBackground(String... serverInfo) {
-        SSLSocket socket = null;
+    protected Void doInBackground(String... serverInfo) {
         String server = serverInfo[0];
         int port = Integer.parseInt(serverInfo[1]);
         String api = serverInfo[2];
@@ -42,8 +45,8 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
         try {
             Log.i(TAG, "Creating socket");
             Socket raw = new Socket(server, port);
-            socket = (SSLSocket) mSocketFactory.createSocket(raw, server, port, false);
-            OutputStream out = socket.getOutputStream();
+            mSocket = (SSLSocket) mSocketFactory.createSocket(raw, server, port, false);
+            OutputStream out = mSocket.getOutputStream();
             out.write(api.getBytes());
             out.write(TCPSocketService.SEND_REFRESH.getBytes());
         } catch (IOException e) {
@@ -52,9 +55,9 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
         }
 
         // Verify hostname and close socket if there isn't a match
-        if (socket != null) {
+        if (mSocket != null) {
             HostnameVerifier verifier = HttpsURLConnection.getDefaultHostnameVerifier();
-            SSLSession session = socket.getSession();
+            SSLSession session = mSocket.getSession();
             if (!verifier.verify("GarageOpener", session)) {
                 try {
                     Log.e(TAG,"Expected " + server + ", found " + session.getPeerPrincipal());
@@ -63,15 +66,19 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
                 }
 
                 try {
-                    socket.close();
+                    mSocket.close();
                 } catch (IOException e) {
                     Log.e(TAG, "Could not close socket.");
                     e.printStackTrace();
                 }
-                socket = null;
+                mSocket = null;
             }
         }
+        return null;
+    }
 
-        return socket;
+    @Override
+    protected void onPostExecute(Void completed) {
+        mListener.onSocketReady(mSocket);
     }
 }

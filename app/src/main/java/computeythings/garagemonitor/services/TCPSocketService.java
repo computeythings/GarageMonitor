@@ -170,19 +170,10 @@ public class TCPSocketService extends IntentService {
     /*
         Creates an SSL Socket connection to the server which the service was started with
      */
-    private boolean socketOpen() {
-        try {
-            mSocketConnection = new AsyncSocketCreator(createSocketFactory())
-                    .executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,
-                            mServerAddress, mPort + "", mApiKey).get();
-            mReceiverThread = new DataReceiver(mBroadcaster);
-            mReceiverThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
-
-            return mSocketConnection != null;
-        } catch (InterruptedException | ExecutionException | NullPointerException e) {
-            Log.e(TAG, "Error creating socket");
-        }
-        return false;
+    private void socketOpen() {
+        new AsyncSocketCreator(createSocketFactory(), new SocketReadyListener())
+                .executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,
+                        mServerAddress, mPort + "", mApiKey);
     }
 
     /*
@@ -197,7 +188,7 @@ public class TCPSocketService extends IntentService {
         } catch (IOException | NullPointerException e) {
             Log.w(TAG, "Error writing to connection on " + mServerAddress + ":" + mPort);
             // If socket is closed, attempt to reopen and resend message.
-            return socketOpen() && socketWrite(message);
+            return false;
         }
     }
 
@@ -241,6 +232,17 @@ public class TCPSocketService extends IntentService {
         super.onDestroy();
     }
 
+    public class SocketReadyListener {
+        public void onSocketReady(SSLSocket socket) {
+            mSocketConnection = socket;
+            mReceiverThread = new DataReceiver(mBroadcaster);
+            mReceiverThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
+        }
+    }
+
+    /*
+        Class handles bindings and this service as a binder in order to give access to its methods
+     */
     public class SocketServiceBinder extends Binder {
         public TCPSocketService getService() {
             return TCPSocketService.this;
