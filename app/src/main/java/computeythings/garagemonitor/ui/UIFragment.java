@@ -509,7 +509,6 @@ public class UIFragment extends Fragment
                 // Data should always be received as a JSON String from the server
                 try {
                     JSONObject json = new JSONObject(status);
-                    Log.d("DEBUG", json.toString());
                     if ((Boolean) json.get("OPEN")) {
                         mSavedState = "OPEN";
                     } else if ((Boolean) json.get("CLOSED")) {
@@ -519,7 +518,6 @@ public class UIFragment extends Fragment
                     } else if ((Boolean) json.get("OPENING")) {
                         mSavedState = "OPENING";
                     } else {
-                        Log.d("DEBUG", "SETTING SAVED STATE TO NEITHER");
                         mSavedState = "NEITHER";
                     }
                 } catch (JSONException e) {
