@@ -508,7 +508,8 @@ public class UIFragment extends Fragment
                 //TODO: Server reconnect retry
                 Log.d(TAG, "Received server-side disconnect");
                 mSavedState = "DISCONNECTED";
-                mSocketConnection.socketClose();
+                if(mSocketConnection != null)
+                    mSocketConnection.socketClose();
             } else {
                 // Data should always be received as a JSON String from the server
                 try {
