@@ -41,7 +41,6 @@ import java.util.Set;
 
 import computeythings.garagemonitor.R;
 import computeythings.garagemonitor.async.AsyncSocketClose;
-import computeythings.garagemonitor.async.AsyncSocketRefresh;
 import computeythings.garagemonitor.async.AsyncSocketWriter;
 import computeythings.garagemonitor.interfaces.SocketResultListener;
 import computeythings.garagemonitor.preferences.ServerPreferences;
@@ -197,7 +196,7 @@ public class UIFragment extends Fragment
                     @Override
                     public void onRefresh() {
                         if (mPreferences.getSelectedServer() != null) {
-                            refreshServer();
+                            writeMessage(TCPSocketService.SEND_REFRESH);
                         } else {
                             mSwipeRefreshLayout.setRefreshing(false);
                         }
@@ -257,34 +256,11 @@ public class UIFragment extends Fragment
      */
     private void buttonSetup() {
         FloatingActionButton refreshButton = mParentView.findViewById(R.id.refresh_fab);
-        refreshOnClick(refreshButton);
+        writeMessageOnClick(refreshButton, TCPSocketService.SEND_REFRESH);
         FloatingActionButton openButton = mParentView.findViewById(R.id.open_fab);
         writeMessageOnClick(openButton, TCPSocketService.GARAGE_OPEN);
         FloatingActionButton closeButton = mParentView.findViewById(R.id.close_fab);
         writeMessageOnClick(closeButton, TCPSocketService.GARAGE_CLOSE);
-    }
-
-    /*
-        Adds functionality to @param fab to write over the SSLSocket to request updated server info
-     */
-    private void refreshOnClick(FloatingActionButton fab) {
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (mSocketBound) {
-                    if (mPreferences.getSelectedServer() != null)
-                        refreshServer();
-                } else {
-                    Toast.makeText(getContext(), "No server connected.",
-                            Toast.LENGTH_LONG).show();
-                }
-            }
-        });
-    }
-
-    private void refreshServer() {
-        new AsyncSocketRefresh(this).executeOnExecutor(
-                AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
     }
 
     /*
@@ -295,8 +271,10 @@ public class UIFragment extends Fragment
             @Override
             public void onClick(View view) {
                 if (mSocketBound) {
-                    if (mPreferences.getSelectedServer() != null)
+                    if (mPreferences.getSelectedServer() != null) {
+                        mSwipeRefreshLayout.setRefreshing(true);
                         writeMessage(message);
+                    }
                 } else {
                     Toast.makeText(getContext(), "No server connected.",
                             Toast.LENGTH_LONG).show();
@@ -459,7 +437,7 @@ public class UIFragment extends Fragment
     @Override
     public void onSocketResult(Boolean success) {
         mSwipeRefreshLayout.setRefreshing(false);
-        if(!success)
+        if (!success)
             Toast.makeText(mContext, "Could not reach server", Toast.LENGTH_SHORT).show();
     }
 
