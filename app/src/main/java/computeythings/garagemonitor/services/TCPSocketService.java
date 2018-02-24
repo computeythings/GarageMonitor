@@ -24,7 +24,6 @@ import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
-import java.util.concurrent.ExecutionException;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
@@ -282,8 +281,8 @@ public class TCPSocketService extends IntentService implements SocketCreatedList
             } catch (IOException | NullPointerException e) {
                 Log.w(TAG, "Disconnected from server");
                 e.printStackTrace();
-                broadcastMessage(SERVERSIDE_DISCONNECT);
             }
+            broadcastMessage(SERVERSIDE_DISCONNECT);
             return null;
         }
 

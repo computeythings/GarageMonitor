@@ -437,8 +437,10 @@ public class UIFragment extends Fragment
     @Override
     public void onSocketResult(Boolean success) {
         mSwipeRefreshLayout.setRefreshing(false);
-        if (!success)
+        if (!success) {
             Toast.makeText(mContext, "Could not reach server", Toast.LENGTH_SHORT).show();
+
+        }
     }
 
     /*
@@ -511,8 +513,8 @@ public class UIFragment extends Fragment
                     e.printStackTrace();
                     mSavedState = "NEITHER";
                 }
-                refreshDrawable();
             }
+            refreshDrawable();
         }
     }
 
