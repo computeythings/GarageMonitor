@@ -33,6 +33,7 @@ import javax.net.ssl.TrustManagerFactory;
 
 import computeythings.garagemonitor.async.AsyncSocketClose;
 import computeythings.garagemonitor.async.AsyncSocketCreator;
+import computeythings.garagemonitor.interfaces.SocketCreatedListener;
 
 /**
  * SSL Socket service used to connect to garage door opener server.
@@ -41,7 +42,7 @@ import computeythings.garagemonitor.async.AsyncSocketCreator;
  * Created by bryan on 2/6/18.
  */
 
-public class TCPSocketService extends IntentService {
+public class TCPSocketService extends IntentService implements SocketCreatedListener{
     private static final String TAG = "SOCKET_SERVICE";
     public static final String SEND_REFRESH = "REFRESH";
     public static final String SOCKET_CLOSE = "KILL";
@@ -171,7 +172,7 @@ public class TCPSocketService extends IntentService {
         Creates an SSL Socket connection to the server which the service was started with
      */
     private void socketOpen() {
-        new AsyncSocketCreator(createSocketFactory(), new SocketReadyListener())
+        new AsyncSocketCreator(createSocketFactory(), this)
                 .executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,
                         mServerAddress, mPort + "", mApiKey);
     }
@@ -232,12 +233,11 @@ public class TCPSocketService extends IntentService {
         super.onDestroy();
     }
 
-    public class SocketReadyListener {
-        public void onSocketReady(SSLSocket socket) {
-            mSocketConnection = socket;
-            mReceiverThread = new DataReceiver(mBroadcaster);
-            mReceiverThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
-        }
+    @Override
+    public void onSocketReady(SSLSocket socket) {
+        mSocketConnection = socket;
+        mReceiverThread = new DataReceiver(mBroadcaster);
+        mReceiverThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
     }
 
     /*

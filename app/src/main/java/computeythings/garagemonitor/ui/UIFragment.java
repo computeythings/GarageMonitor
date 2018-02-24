@@ -43,6 +43,7 @@ import computeythings.garagemonitor.R;
 import computeythings.garagemonitor.async.AsyncSocketClose;
 import computeythings.garagemonitor.async.AsyncSocketRefresh;
 import computeythings.garagemonitor.async.AsyncSocketWriter;
+import computeythings.garagemonitor.interfaces.SocketResultListener;
 import computeythings.garagemonitor.preferences.ServerPreferences;
 import computeythings.garagemonitor.services.TCPSocketService;
 
@@ -53,7 +54,7 @@ import computeythings.garagemonitor.services.TCPSocketService;
  */
 
 public class UIFragment extends Fragment
-        implements NavigationView.OnNavigationItemSelectedListener {
+        implements NavigationView.OnNavigationItemSelectedListener, SocketResultListener {
     private static final String TAG = "UI_Fragment";
     private Context mContext;
     private View mParentView;
@@ -282,7 +283,7 @@ public class UIFragment extends Fragment
     }
 
     private void refreshServer() {
-        new AsyncSocketRefresh(mContext, mSwipeRefreshLayout).executeOnExecutor(
+        new AsyncSocketRefresh(this).executeOnExecutor(
                 AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
     }
 
@@ -305,7 +306,7 @@ public class UIFragment extends Fragment
     }
 
     private void writeMessage(String message) {
-        new AsyncSocketWriter(mContext, message).executeOnExecutor(
+        new AsyncSocketWriter(message, this).executeOnExecutor(
                 AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
     }
 
@@ -453,6 +454,13 @@ public class UIFragment extends Fragment
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onSocketResult(Boolean success) {
+        mSwipeRefreshLayout.setRefreshing(false);
+        if(!success)
+            Toast.makeText(mContext, "Could not reach server", Toast.LENGTH_SHORT).show();
     }
 
     /*

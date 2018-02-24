@@ -14,6 +14,7 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
+import computeythings.garagemonitor.interfaces.SocketCreatedListener;
 import computeythings.garagemonitor.services.TCPSocketService;
 
 
@@ -21,14 +22,13 @@ import computeythings.garagemonitor.services.TCPSocketService;
  * Created by bryan on 2/6/18.
  */
 
-public class AsyncSocketCreator extends AsyncTask<String, Void, Void> {
+public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
     private static final String TAG = "SOCKET_CREATOR";
-    private SSLSocket mSocket;
     private SSLSocketFactory mSocketFactory;
-    private TCPSocketService.SocketReadyListener mListener;
+    private SocketCreatedListener mListener;
 
     public AsyncSocketCreator(SSLSocketFactory socketFactory,
-                              TCPSocketService.SocketReadyListener listener) {
+                              SocketCreatedListener listener) {
         if (socketFactory != null)
             mSocketFactory = socketFactory; // created from self-signed cert
         else
@@ -37,7 +37,8 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, Void> {
     }
 
     @Override
-    protected Void doInBackground(String... serverInfo) {
+    protected SSLSocket doInBackground(String... serverInfo) {
+        SSLSocket socket = null;
         String server = serverInfo[0];
         int port = Integer.parseInt(serverInfo[1]);
         String api = serverInfo[2];
@@ -45,8 +46,8 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, Void> {
         try {
             Log.i(TAG, "Creating socket");
             Socket raw = new Socket(server, port);
-            mSocket = (SSLSocket) mSocketFactory.createSocket(raw, server, port, false);
-            OutputStream out = mSocket.getOutputStream();
+            socket = (SSLSocket) mSocketFactory.createSocket(raw, server, port, false);
+            OutputStream out = socket.getOutputStream();
             out.write(api.getBytes());
             out.write(TCPSocketService.SEND_REFRESH.getBytes());
         } catch (IOException e) {
@@ -55,9 +56,9 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, Void> {
         }
 
         // Verify hostname and close socket if there isn't a match
-        if (mSocket != null) {
+        if (socket != null) {
             HostnameVerifier verifier = HttpsURLConnection.getDefaultHostnameVerifier();
-            SSLSession session = mSocket.getSession();
+            SSLSession session = socket.getSession();
             if (!verifier.verify(server, session)) {
                 try {
                     Log.e(TAG,"Expected " + server + ", found " + session.getPeerPrincipal());
@@ -66,19 +67,19 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, Void> {
                 }
 
                 try {
-                    mSocket.close();
+                    socket.close();
                 } catch (IOException e) {
                     Log.e(TAG, "Could not close socket.");
                     e.printStackTrace();
                 }
-                mSocket = null;
+                socket = null;
             }
         }
-        return null;
+        return socket;
     }
 
     @Override
-    protected void onPostExecute(Void completed) {
-        mListener.onSocketReady(mSocket);
+    protected void onPostExecute(SSLSocket socket) {
+        mListener.onSocketReady(socket);
     }
 }
