@@ -11,6 +11,7 @@ import android.content.ServiceConnection;
 import android.graphics.drawable.AnimationDrawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
@@ -272,7 +273,6 @@ public class UIFragment extends Fragment
             public void onClick(View view) {
                 if (mSocketBound) {
                     if (mPreferences.getSelectedServer() != null) {
-                        mSwipeRefreshLayout.setRefreshing(true);
                         writeMessage(message);
                     }
                 } else {
@@ -283,9 +283,25 @@ public class UIFragment extends Fragment
         });
     }
 
-    private void writeMessage(String message) {
-        new AsyncSocketWriter(message, this).executeOnExecutor(
-                AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
+    private void writeMessage(final String message) {
+        mSwipeRefreshLayout.setRefreshing(true);
+
+        if(mSocketConnection.isConnected()) {
+            new AsyncSocketWriter(message, this).executeOnExecutor(
+                    AsyncTask.SERIAL_EXECUTOR, mSocketConnection);
+        } else {
+            Toast.makeText(mContext, "Attempting to reconnect to server...",
+                    Toast.LENGTH_SHORT).show();
+            Handler sender = new Handler();
+            sender.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    mSocketConnection.socketOpen();
+                    new AsyncSocketWriter(message, UIFragment.this)
+                            .execute(mSocketConnection);
+                }
+            }, 3000);
+        }
     }
 
     /*
@@ -439,7 +455,6 @@ public class UIFragment extends Fragment
         mSwipeRefreshLayout.setRefreshing(false);
         if (!success) {
             Toast.makeText(mContext, "Could not reach server", Toast.LENGTH_SHORT).show();
-
         }
     }
 
@@ -493,6 +508,7 @@ public class UIFragment extends Fragment
                 //TODO: Server reconnect retry
                 Log.d(TAG, "Received server-side disconnect");
                 mSavedState = "DISCONNECTED";
+                mSocketConnection.socketClose();
             } else {
                 // Data should always be received as a JSON String from the server
                 try {

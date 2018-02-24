@@ -170,10 +170,14 @@ public class TCPSocketService extends IntentService implements SocketCreatedList
     /*
         Creates an SSL Socket connection to the server which the service was started with
      */
-    private void socketOpen() {
+    public void socketOpen() {
         new AsyncSocketCreator(createSocketFactory(), this)
-                .executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,
+                .executeOnExecutor(AsyncTask.SERIAL_EXECUTOR,
                         mServerAddress, mPort + "", mApiKey);
+    }
+
+    public boolean isConnected() {
+        return mSocketConnection != null && !mSocketConnection.isClosed();
     }
 
     /*
@@ -266,8 +270,8 @@ public class TCPSocketService extends IntentService implements SocketCreatedList
         protected Void doInBackground(SSLSocket... connection) {
             BufferedReader in;
             String data;
+            SSLSocket socket = connection[0];
             try {
-                SSLSocket socket = connection[0];
                 in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
                 while (socket.isConnected() && !isCancelled()) {
