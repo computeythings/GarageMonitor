@@ -382,6 +382,8 @@ public class UIFragment extends Fragment
             mServerMenu.add(R.string.empty_server_menu); // Placeholder if there are no servers
         if (mSettingsMenu != null)
             this.onPrepareOptionsMenu(mSettingsMenu);
+        Toolbar toolbar = mParentView.findViewById(R.id.toolbar);
+        toolbar.setTitle(mPreferences.getSelectedServer());
     }
 
     public void serverDeleted() {

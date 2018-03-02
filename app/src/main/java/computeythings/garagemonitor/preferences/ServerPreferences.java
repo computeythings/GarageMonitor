@@ -46,10 +46,6 @@ public class ServerPreferences {
             json.put(SERVER_ADDRESS, address);
             json.put(SERVER_API_KEY, apikey);
             json.put(SERVER_PORT, port);
-            if(certLocation.equals(AddServerDialog.USE_CURRENT)) { // don't change cert location
-                JSONObject current = new JSONObject(getServerInfo(name));
-                certLocation = current.getString(SERVER_CERT);
-            }
             json.put(SERVER_CERT, certLocation);
         } catch (JSONException e) {
             Log.e(TAG, "Unexpected JSON error");

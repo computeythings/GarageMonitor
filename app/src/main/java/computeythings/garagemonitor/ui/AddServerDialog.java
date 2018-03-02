@@ -35,7 +35,6 @@ public class AddServerDialog extends DialogFragment {
     public static final String EDIT_API_KEY = "EDIT_API_KEY";
     public static final String EDIT_PORT = "EDIT_PORT";
     public static final String EDIT_CERT = "EDIT_CERT";
-    public static final String USE_CURRENT = "USE_CURRENT";
     public static final int READ_REQUEST_CODE = 444;
 
     ServerPreferences mPrefs;
@@ -82,8 +81,7 @@ public class AddServerDialog extends DialogFragment {
             mAPIKeyField.setText(args.getString(EDIT_API_KEY, ""));
             mPortField.setText(args.getString(EDIT_PORT, ""));
             mCertField.setText(getFilenameFromURI(Uri.parse(args.getString(EDIT_CERT, ""))));
-
-            mCertURI = USE_CURRENT;
+            mCertURI = args.getString(EDIT_CERT);
 
             builder.setNeutralButton(R.string.delete, new DialogInterface.OnClickListener() {
                         @Override
@@ -176,7 +174,6 @@ public class AddServerDialog extends DialogFragment {
             positiveButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Log.d(TAG, "ADD BUTTON CLICKED");
                     mPrefs = new ServerPreferences(getContext());
                     String serverName = mNameField.getText().toString().trim();
                     String serverAddress = mAddressField.getText().toString().trim();
@@ -209,8 +206,12 @@ public class AddServerDialog extends DialogFragment {
                     if (mPrefs.getServerList().size() == 1) {
                         mPrefs.setSelectedServer(serverName);
                         ((OnServerListChangeListener) getHost()).onServerAdded(true);
-                    } else
+                    } else {
+                        // Delete the current server and re-add with new values.
+                        mPrefs.removeServer(mPrefs.getSelectedServer());
+                        mPrefs.setSelectedServer(serverName);
                         ((OnServerListChangeListener) getHost()).onServerAdded(false);
+                    }
 
                     //Do stuff, possibly set wantToCloseDialog to true then...
                     if (isFormValid)
