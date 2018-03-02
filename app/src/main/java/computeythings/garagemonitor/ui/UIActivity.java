@@ -17,20 +17,21 @@ import computeythings.garagemonitor.R;
 
 public class UIActivity extends AppCompatActivity implements AddServerDialog.OnServerListChangeListener {
     private static final String TAG = "MAIN_ACTIVITY";
-    UIFragment mUIFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.app_container);
-        mUIFragment = (UIFragment) getSupportFragmentManager().findFragmentById(R.id.ui_fragment);
+
     }
 
     // If the app drawer is open, close that with back button.
     @Override
     public void onBackPressed() {
         try {
-            DrawerLayout drawer = mUIFragment.mDrawer;
+            UIFragment ui = (UIFragment) getSupportFragmentManager()
+                    .findFragmentById(R.id.ui_fragment);
+            DrawerLayout drawer = ui.getDrawerLayout();
             if (drawer.isDrawerOpen(GravityCompat.START)) {
                 drawer.closeDrawer(GravityCompat.START);
             } else {
@@ -46,11 +47,13 @@ public class UIActivity extends AppCompatActivity implements AddServerDialog.OnS
     // Alert the UI fragment that a new server has been added
     @Override
     public void onServerAdded(boolean isFirstServer) {
-        mUIFragment.updateServerList(isFirstServer);
+        UIFragment ui = (UIFragment) getSupportFragmentManager().findFragmentById(R.id.ui_fragment);
+        ui.updateServerList(isFirstServer);
     }
 
     @Override
     public void onServerDeleted() {
-        mUIFragment.serverDeleted();
+        UIFragment ui = (UIFragment) getSupportFragmentManager().findFragmentById(R.id.ui_fragment);
+        ui.serverDeleted();
     }
 }

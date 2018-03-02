@@ -56,20 +56,23 @@ import computeythings.garagemonitor.services.TCPSocketService;
 public class UIFragment extends Fragment
         implements NavigationView.OnNavigationItemSelectedListener, SocketResultListener {
     private static final String TAG = "UI_Fragment";
-    private Context mContext;
-    private View mParentView;
-    private BroadcastReceiver mDataReceiver;
-    private TCPSocketService mSocketConnection;
-    private boolean mSocketBound;
-    private ServiceConnection mConnection;
-    private Menu mServerMenu;
-    private Menu mSettingsMenu;
-    SwipeRefreshLayout mSwipeRefreshLayout;
+
     private String mSavedState;
     private boolean firstStart;
 
-    protected DrawerLayout mDrawer;
-    protected ServerPreferences mPreferences;
+    private Context mContext;
+    private View mParentView;
+    private SwipeRefreshLayout mSwipeRefreshLayout;
+    private DrawerLayout mDrawer;
+    private Menu mServerMenu;
+    private Menu mSettingsMenu;
+
+    private BroadcastReceiver mDataReceiver;
+    private TCPSocketService mSocketConnection;
+    private ServiceConnection mConnection;
+    private boolean mSocketBound;
+
+    private ServerPreferences mPreferences;
 
     @Override
     public void onAttach(Context context) {
@@ -286,7 +289,7 @@ public class UIFragment extends Fragment
     private void writeMessage(final String message) {
         mSwipeRefreshLayout.setRefreshing(true);
 
-        if(mSocketConnection.isConnected()) {
+        if (mSocketConnection.isConnected()) {
             new AsyncSocketWriter(message, this).executeOnExecutor(
                     AsyncTask.SERIAL_EXECUTOR, mSocketConnection);
         } else {
@@ -352,6 +355,10 @@ public class UIFragment extends Fragment
         // Close drawer
         mDrawer.closeDrawer(GravityCompat.START);
         return true; // Touch was consumed
+    }
+
+    public DrawerLayout getDrawerLayout() {
+        return mDrawer;
     }
 
     /*
@@ -508,7 +515,7 @@ public class UIFragment extends Fragment
                 //TODO: Server reconnect retry
                 Log.d(TAG, "Received server-side disconnect");
                 mSavedState = "DISCONNECTED";
-                if(mSocketConnection != null)
+                if (mSocketConnection != null)
                     mSocketConnection.socketClose();
             } else {
                 // Data should always be received as a JSON String from the server
