@@ -61,6 +61,8 @@ public class TCPSocketService extends IntentService implements SocketCreatedList
             "computeythings.garagemonitor.services.TCPSocketService.DATA_PAYLOAD";
     public static final String SERVERSIDE_DISCONNECT =
             "computeythings.garagemonitor.services.TCPSocketService.SERVER_DISCONNECT";
+    public static final String CONNECTION_ERROR =
+            "computeythings.garagemonitor.services.TCPSocketService.CONNECTION_ERROR";
     private String mServerAddress;
     private String mApiKey;
     private int mPort;
@@ -237,10 +239,16 @@ public class TCPSocketService extends IntentService implements SocketCreatedList
     }
 
     @Override
-    public void onSocketReady(SSLSocket socket) {
+    public void onSocketReady(SSLSocket socket, String errorMsg) {
         mSocketConnection = socket;
-        mReceiverThread = new DataReceiver(mBroadcaster);
-        mReceiverThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
+        if(mSocketConnection != null) {
+            mReceiverThread = new DataReceiver(mBroadcaster);
+            mReceiverThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
+        } else {
+            Intent intent = new Intent(CONNECTION_ERROR);
+            intent.putExtra(DATA, errorMsg);
+            mBroadcaster.sendBroadcast(intent);
+        }
     }
 
     /*

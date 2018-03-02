@@ -45,6 +45,7 @@ public class AddServerDialog extends DialogFragment {
     private TextView mCertField;
     private String mCertURI;
     private boolean isFormValid = false;
+    private boolean isEdit = false;
 
     public interface OnServerListChangeListener {
         void onServerAdded(boolean isFirstServer);
@@ -95,6 +96,8 @@ public class AddServerDialog extends DialogFragment {
                         /* No implementation as it is overridden in onResume() */
                 }
             });
+
+            isEdit = true;
         } else {
             builder.setPositiveButton(R.string.add, new DialogInterface.OnClickListener() {
                 @Override
@@ -207,9 +210,11 @@ public class AddServerDialog extends DialogFragment {
                         mPrefs.setSelectedServer(serverName);
                         ((OnServerListChangeListener) getHost()).onServerAdded(true);
                     } else {
-                        // Delete the current server and re-add with new values.
-                        mPrefs.removeServer(mPrefs.getSelectedServer());
-                        mPrefs.setSelectedServer(serverName);
+                        if(isEdit) {
+                            // Delete the current server and re-add with new values.
+                            mPrefs.removeServer(mPrefs.getSelectedServer());
+                            mPrefs.setSelectedServer(serverName);
+                        }
                         ((OnServerListChangeListener) getHost()).onServerAdded(false);
                     }
 

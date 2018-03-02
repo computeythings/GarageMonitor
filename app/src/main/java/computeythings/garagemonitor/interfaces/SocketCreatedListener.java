@@ -7,5 +7,5 @@ import javax.net.ssl.SSLSocket;
  */
 
 public interface SocketCreatedListener {
-    void onSocketReady(SSLSocket socket);
+    void onSocketReady(SSLSocket socket, String errorMsg);
 }

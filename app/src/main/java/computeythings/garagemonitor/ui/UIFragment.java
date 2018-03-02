@@ -513,31 +513,34 @@ public class UIFragment extends Fragment
             if (mParentView == null || status == null)
                 return;
 
-            if (status.equals(TCPSocketService.SERVERSIDE_DISCONNECT)) {
-                //TODO: Server reconnect retry
-                Log.d(TAG, "Received server-side disconnect");
-                mSavedState = "DISCONNECTED";
-                if (mSocketConnection != null)
-                    mSocketConnection.socketClose();
-            } else {
-                // Data should always be received as a JSON String from the server
-                try {
-                    JSONObject json = new JSONObject(status);
-                    if ((Boolean) json.get("OPEN")) {
-                        mSavedState = "OPEN";
-                    } else if ((Boolean) json.get("CLOSED")) {
-                        mSavedState = "CLOSED";
-                    } else if ((Boolean) json.get("CLOSING")) {
-                        mSavedState = "CLOSING";
-                    } else if ((Boolean) json.get("OPENING")) {
-                        mSavedState = "OPENING";
-                    } else {
+            if(intent.getAction() != null &&
+                    intent.getAction().equals(TCPSocketService.DATA_RECEIVED)) {
+                if (status.equals(TCPSocketService.SERVERSIDE_DISCONNECT)) {
+                    //TODO: Server reconnect retry
+                    Log.d(TAG, "Received server-side disconnect");
+                    mSavedState = "DISCONNECTED";
+                    if (mSocketConnection != null)
+                        mSocketConnection.socketClose();
+                } else {
+                    // Data should always be received as a JSON String from the server
+                    try {
+                        JSONObject json = new JSONObject(status);
+                        if ((Boolean) json.get("OPEN")) {
+                            mSavedState = "OPEN";
+                        } else if ((Boolean) json.get("CLOSED")) {
+                            mSavedState = "CLOSED";
+                        } else if ((Boolean) json.get("CLOSING")) {
+                            mSavedState = "CLOSING";
+                        } else if ((Boolean) json.get("OPENING")) {
+                            mSavedState = "OPENING";
+                        } else {
+                            mSavedState = "NEITHER";
+                        }
+                    } catch (JSONException e) {
+                        Log.w(TAG, "Invalid JSON object: " + status);
+                        e.printStackTrace();
                         mSavedState = "NEITHER";
                     }
-                } catch (JSONException e) {
-                    Log.w(TAG, "Invalid JSON object: " + status);
-                    e.printStackTrace();
-                    mSavedState = "NEITHER";
                 }
             }
             refreshDrawable();

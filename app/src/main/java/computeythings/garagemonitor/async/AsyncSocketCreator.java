@@ -5,10 +5,14 @@ import android.util.Log;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
+import java.util.regex.Pattern;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
@@ -26,6 +30,7 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
     private static final String TAG = "SOCKET_CREATOR";
     private SSLSocketFactory mSocketFactory;
     private SocketCreatedListener mListener;
+    private String errorMsg;
 
     public AsyncSocketCreator(SSLSocketFactory socketFactory,
                               SocketCreatedListener listener) {
@@ -55,31 +60,55 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
             e.printStackTrace();
         }
 
-        // Verify hostname and close socket if there isn't a match
-        if (socket != null) {
-            HostnameVerifier verifier = HttpsURLConnection.getDefaultHostnameVerifier();
-            SSLSession session = socket.getSession();
-            if (!verifier.verify(server, session)) {
-                try {
-                    Log.e(TAG,"Expected " + server + ", found " + session.getPeerPrincipal());
-                } catch (SSLPeerUnverifiedException e) {
-                    Log.e(TAG, "Expected " + server + ", found " + session.getPeerHost());
-                }
+        try{
+            if(!verifyHost(server, socket)) { // this will only happen if the socket is null
+                errorMsg = "Could not connect to server";
+            }
+        } catch (SSLHandshakeException e) {
+            e.printStackTrace();
 
-                try {
+            try {
+                if(socket != null)
                     socket.close();
-                } catch (IOException e) {
-                    Log.e(TAG, "Could not close socket.");
-                    e.printStackTrace();
-                }
-                socket = null;
+            } catch (IOException ex) {
+                Log.e(TAG, "Could not close socket.");
+                ex.printStackTrace();
+            }
+            socket = null;
+            errorMsg = "Could not verify hostname.\nPossible Man-in-the-middle attack!";
+        }
+
+        return socket;
+    }
+
+    private boolean verifyHost(String server, SSLSocket socket) throws SSLHandshakeException{
+        if(socket == null) // Cannot verify host if socket is null
+            return false;
+
+        // If the address is local we'll go ahead and skip hostname verification.
+        // If you've got malicious hosts within your local network you've got other problems.
+        try {
+            if (InetAddress.getByName(server).isSiteLocalAddress())
+                return true;
+        } catch (UnknownHostException ignored){}
+
+        // Hostname verification
+        HostnameVerifier verifier = HttpsURLConnection.getDefaultHostnameVerifier();
+        SSLSession session = socket.getSession();
+        if (!verifier.verify(server, session)) {
+            try {
+                throw new SSLHandshakeException("Expected " + server + ",  found " +
+                        session.getPeerPrincipal());
+            } catch (SSLPeerUnverifiedException e) {
+                throw new SSLHandshakeException("Expected " + server + ",  found " +
+                        session.getPeerHost());
             }
         }
-        return socket;
+        return true;
     }
 
     @Override
     protected void onPostExecute(SSLSocket socket) {
-        mListener.onSocketReady(socket);
+        mListener.onSocketReady(socket, errorMsg);
     }
 }
