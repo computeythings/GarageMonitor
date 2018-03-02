@@ -8,7 +8,6 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.regex.Pattern;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
@@ -23,6 +22,8 @@ import computeythings.garagemonitor.services.TCPSocketService;
 
 
 /**
+ * Asynchronous thread for creating new socket connections to avoid networking on main thread
+ * <p>
  * Created by bryan on 2/6/18.
  */
 
@@ -60,15 +61,15 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
             e.printStackTrace();
         }
 
-        try{
-            if(!verifyHost(server, socket)) { // this will only happen if the socket is null
+        try {
+            if (!verifyHost(server, socket)) { // this will only happen if the socket is null
                 errorMsg = "Could not connect to server";
             }
         } catch (SSLHandshakeException e) {
             e.printStackTrace();
 
             try {
-                if(socket != null)
+                if (socket != null)
                     socket.close();
             } catch (IOException ex) {
                 Log.e(TAG, "Could not close socket.");
@@ -81,8 +82,8 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
         return socket;
     }
 
-    private boolean verifyHost(String server, SSLSocket socket) throws SSLHandshakeException{
-        if(socket == null) // Cannot verify host if socket is null
+    private boolean verifyHost(String server, SSLSocket socket) throws SSLHandshakeException {
+        if (socket == null) // Cannot verify host if socket is null
             return false;
 
         // If the address is local we'll go ahead and skip hostname verification.
@@ -90,7 +91,8 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
         try {
             if (InetAddress.getByName(server).isSiteLocalAddress())
                 return true;
-        } catch (UnknownHostException ignored){}
+        } catch (UnknownHostException ignored) {
+        }
 
         // Hostname verification
         HostnameVerifier verifier = HttpsURLConnection.getDefaultHostnameVerifier();

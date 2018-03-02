@@ -7,6 +7,8 @@ import computeythings.garagemonitor.interfaces.SocketResultListener;
 import computeythings.garagemonitor.services.TCPSocketService;
 
 /**
+ * Asynchronous thread for writing to a socket connection to avoid networking on main thread
+ * <p>
  * Created by bryan on 2/6/18.
  */
 

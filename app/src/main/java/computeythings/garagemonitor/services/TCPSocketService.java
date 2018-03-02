@@ -41,7 +41,7 @@ import computeythings.garagemonitor.interfaces.SocketCreatedListener;
  * Created by bryan on 2/6/18.
  */
 
-public class TCPSocketService extends IntentService implements SocketCreatedListener{
+public class TCPSocketService extends IntentService implements SocketCreatedListener {
     private static final String TAG = "SOCKET_SERVICE";
     public static final String SEND_REFRESH = "REFRESH";
     public static final String SOCKET_CLOSE = "KILL";
@@ -241,7 +241,7 @@ public class TCPSocketService extends IntentService implements SocketCreatedList
     @Override
     public void onSocketReady(SSLSocket socket, String errorMsg) {
         mSocketConnection = socket;
-        if(mSocketConnection != null) {
+        if (mSocketConnection != null) {
             mReceiverThread = new DataReceiver(mBroadcaster);
             mReceiverThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
         } else {

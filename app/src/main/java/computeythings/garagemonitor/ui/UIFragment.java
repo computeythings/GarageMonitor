@@ -513,7 +513,7 @@ public class UIFragment extends Fragment
             if (mParentView == null || status == null)
                 return;
 
-            if(intent.getAction() != null &&
+            if (intent.getAction() != null &&
                     intent.getAction().equals(TCPSocketService.DATA_RECEIVED)) {
                 if (status.equals(TCPSocketService.SERVERSIDE_DISCONNECT)) {
                     //TODO: Server reconnect retry

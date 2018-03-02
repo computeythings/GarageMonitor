@@ -11,7 +11,6 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.widget.Toast;
 
 import computeythings.garagemonitor.R;
 import computeythings.garagemonitor.services.TCPSocketService;
@@ -19,7 +18,7 @@ import computeythings.garagemonitor.services.TCPSocketService;
 /**
  * Activity responsible for fragment running and communication. Responds to callbacks from
  * AddServerDialog when new servers are updated and relays those callbacks to the UI fragment.
- *
+ * <p>
  * Created by bryan on 2/9/18.
  */
 
@@ -35,7 +34,8 @@ public class UIActivity extends AppCompatActivity implements AddServerDialog.OnS
         LocalBroadcastManager.getInstance(this).registerReceiver(new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                if(intent.getAction().equals(TCPSocketService.CONNECTION_ERROR)) {
+                if (intent.getAction() != null &&
+                        intent.getAction().equals(TCPSocketService.CONNECTION_ERROR)) {
                     AlertDialog dialog = new AlertDialog.Builder(UIActivity.this).create();
                     dialog.setTitle("CONNECTION REFUSED");
                     dialog.setMessage(intent.getStringExtra(TCPSocketService.DATA));

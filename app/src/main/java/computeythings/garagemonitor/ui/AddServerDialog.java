@@ -12,7 +12,6 @@ import android.os.Bundle;
 import android.provider.OpenableColumns;
 import android.support.annotation.NonNull;
 import android.support.v4.app.DialogFragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -49,6 +48,7 @@ public class AddServerDialog extends DialogFragment {
 
     public interface OnServerListChangeListener {
         void onServerAdded(boolean isFirstServer);
+
         void onServerDeleted();
     }
 
@@ -85,11 +85,11 @@ public class AddServerDialog extends DialogFragment {
             mCertURI = args.getString(EDIT_CERT);
 
             builder.setNeutralButton(R.string.delete, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            confirmDelete((OnServerListChangeListener) getHost());
-                        }
-                    });
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    confirmDelete((OnServerListChangeListener) getHost());
+                }
+            });
             builder.setPositiveButton(R.string.update, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
@@ -113,7 +113,7 @@ public class AddServerDialog extends DialogFragment {
                 AddServerDialog.this.getDialog().cancel();
             }
         })
-        .setTitle("Add a Server");
+                .setTitle("Add a Server");
         return builder.create();
     }
 
@@ -210,7 +210,7 @@ public class AddServerDialog extends DialogFragment {
                         mPrefs.setSelectedServer(serverName);
                         ((OnServerListChangeListener) getHost()).onServerAdded(true);
                     } else {
-                        if(isEdit) {
+                        if (isEdit) {
                             // Delete the current server and re-add with new values.
                             mPrefs.removeServer(mPrefs.getSelectedServer());
                             mPrefs.setSelectedServer(serverName);
@@ -237,7 +237,8 @@ public class AddServerDialog extends DialogFragment {
                 .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
                         host.onServerDeleted();
-                    }})
+                    }
+                })
                 .setNegativeButton(android.R.string.no, null).show();
     }
 }

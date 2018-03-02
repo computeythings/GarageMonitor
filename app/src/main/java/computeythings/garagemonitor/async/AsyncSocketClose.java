@@ -6,6 +6,8 @@ import android.util.Log;
 import computeythings.garagemonitor.services.TCPSocketService;
 
 /**
+ * Asynchronous thread for closing an open connection to avoid networking on main thread
+ *
  * Created by bryan on 2/6/18.
  */
 

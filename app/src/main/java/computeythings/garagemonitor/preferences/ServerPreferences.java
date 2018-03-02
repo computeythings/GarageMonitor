@@ -10,8 +10,6 @@ import org.json.JSONObject;
 import java.util.HashSet;
 import java.util.Set;
 
-import computeythings.garagemonitor.ui.AddServerDialog;
-
 /**
  * Class used to interact with the apps saved preferences
  * <p>
@@ -80,7 +78,7 @@ public class ServerPreferences {
         editor.putStringSet(SERVER_LIST, serverList); // write update server list
 
         // If the server being removed is the current server, set current selected to null
-        if(mPrefs.getString(SELECTED_SERVER, "").equals(serverName))
+        if (mPrefs.getString(SELECTED_SERVER, "").equals(serverName))
             editor.putString(SELECTED_SERVER, null);
 
         return editor.commit();
