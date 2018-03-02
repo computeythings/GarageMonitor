@@ -56,6 +56,12 @@ import computeythings.garagemonitor.services.TCPSocketService;
 public class UIFragment extends Fragment
         implements NavigationView.OnNavigationItemSelectedListener, SocketResultListener {
     private static final String TAG = "UI_Fragment";
+    private static final String STATE_OPEN = "OPEN";
+    private static final String STATE_OPENING = "OPENING";
+    private static final String STATE_CLOSED = "CLOSED";
+    private static final String STATE_CLOSING = "CLOSING";
+    private static final String STATE_NONE = "NEITHER";
+    private static final String STATE_DISCONNECTED = "DISCONNECTED";
 
     private String mSavedState;
     private boolean firstStart;
@@ -96,7 +102,7 @@ public class UIFragment extends Fragment
         setHasOptionsMenu(true); // Enable settings menu
         mDataReceiver = new TCPBroadcastReceiver();
         firstStart = true;
-        mSavedState = "DISCONNECTED";
+        mSavedState = STATE_DISCONNECTED;
     }
 
     @Override
@@ -231,21 +237,21 @@ public class UIFragment extends Fragment
         if (mSavedState != null) {
             ImageView statusView = mParentView.findViewById(R.id.door_status);
             switch (mSavedState) {
-                case "OPEN":
+                case STATE_OPEN:
                     statusView.setImageResource(R.drawable.garage_open);
                     break;
-                case "CLOSED":
+                case STATE_CLOSED:
                     statusView.setImageResource(R.drawable.garage_closed);
                     break;
-                case "OPENING":
+                case STATE_OPENING:
                     statusView.setImageResource(R.drawable.garage_opening_animation);
                     ((AnimationDrawable) statusView.getDrawable()).start();
                     break;
-                case "CLOSING":
+                case STATE_CLOSING:
                     statusView.setImageResource(R.drawable.garage_closing_animation);
                     ((AnimationDrawable) statusView.getDrawable()).start();
                     break;
-                case "NEITHER":
+                case STATE_NONE:
                     statusView.setImageResource(R.drawable.garage_middle);
                     break;
                 default:
@@ -319,10 +325,9 @@ public class UIFragment extends Fragment
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-        // todo: move to strings resource file
         String selected = item.getTitle().toString();
         // Add server functionality
-        if (selected.equals("Add Server")) {
+        if (selected.equals(getResources().getString(R.string.add_server))) {
             new AddServerDialog().show(getFragmentManager(), "new_server");
             // Any other option will be a server unless it is the empty server placeholder item
         } else if (!selected.equals(getResources().getString(R.string.empty_server_menu))) {
@@ -336,7 +341,7 @@ public class UIFragment extends Fragment
                 serverConnect();
                 // Kill any existing server connections if they are available
             } else if (!currentServer.equals(selected)) {
-                mSavedState = "DISCONNECTED";
+                mSavedState = STATE_DISCONNECTED;
                 // Kill the running service
                 mContext.unbindService(mConnection);
                 mContext.stopService(getServerFromSettings());
@@ -516,30 +521,29 @@ public class UIFragment extends Fragment
             if (intent.getAction() != null &&
                     intent.getAction().equals(TCPSocketService.DATA_RECEIVED)) {
                 if (status.equals(TCPSocketService.SERVERSIDE_DISCONNECT)) {
-                    //TODO: Server reconnect retry
                     Log.d(TAG, "Received server-side disconnect");
-                    mSavedState = "DISCONNECTED";
+                    mSavedState = STATE_DISCONNECTED;
                     if (mSocketConnection != null)
                         mSocketConnection.socketClose();
                 } else {
                     // Data should always be received as a JSON String from the server
                     try {
                         JSONObject json = new JSONObject(status);
-                        if ((Boolean) json.get("OPEN")) {
-                            mSavedState = "OPEN";
-                        } else if ((Boolean) json.get("CLOSED")) {
-                            mSavedState = "CLOSED";
-                        } else if ((Boolean) json.get("CLOSING")) {
-                            mSavedState = "CLOSING";
-                        } else if ((Boolean) json.get("OPENING")) {
-                            mSavedState = "OPENING";
+                        if ((Boolean) json.get(STATE_OPEN)) {
+                            mSavedState = STATE_OPEN;
+                        } else if ((Boolean) json.get(STATE_CLOSED)) {
+                            mSavedState = STATE_CLOSED;
+                        } else if ((Boolean) json.get(STATE_CLOSING)) {
+                            mSavedState = STATE_CLOSING;
+                        } else if ((Boolean) json.get(STATE_OPENING)) {
+                            mSavedState = STATE_OPENING;
                         } else {
-                            mSavedState = "NEITHER";
+                            mSavedState = STATE_NONE;
                         }
                     } catch (JSONException e) {
                         Log.w(TAG, "Invalid JSON object: " + status);
                         e.printStackTrace();
-                        mSavedState = "NEITHER";
+                        mSavedState = STATE_NONE;
                     }
                 }
             }
