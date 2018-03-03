@@ -78,10 +78,22 @@ public class AddServerDialog extends DialogFragment {
 
         if (args != null) { // args are null on add and initialized on edit
             mNameField.setText(args.getString(EDIT_NAME, ""));
+
+            // Address field shouldn't need to be changed so we'll disallow it
             mAddressField.setText(args.getString(EDIT_ADDRESS, ""));
+            mAddressField.setFocusable(false);
+            mAddressField.setBackground(null);
+
             mAPIKeyField.setText(args.getString(EDIT_API_KEY, ""));
             mPortField.setText(args.getString(EDIT_PORT, ""));
-            mCertField.setText(getFilenameFromURI(Uri.parse(args.getString(EDIT_CERT, ""))));
+
+            String certLocation = getFilenameFromURI(Uri.parse(
+                    args.getString(EDIT_CERT, "")));
+            if(certLocation.equals("Invalid File"))
+                mCertField.setHint("N/A");
+            else
+                mCertField.setText(certLocation);
+
             mCertURI = args.getString(EDIT_CERT);
 
             builder.setNeutralButton(R.string.delete, new DialogInterface.OnClickListener() {
@@ -188,7 +200,7 @@ public class AddServerDialog extends DialogFragment {
                         serverName = serverAddress;
                     if (serverPort.equals(""))
                         serverPort = "4444";
-                    if (certLocation.equals(""))
+                    if (certLocation.equals("") && mCertURI == null)
                         mCertURI = certLocation;
 
                     if (serverAddress.length() <= 0 || serverApiKey.length() <= 0) {
