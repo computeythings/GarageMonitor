@@ -99,10 +99,6 @@ public class TCPSocketService extends IntentService implements SocketCreatedList
         // Open socket with new server properties
         socketOpen();
 
-        // Create new socket polling thread
-        mReceiverThread = new DataReceiver(mBroadcaster);
-        mReceiverThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
-
         return START_NOT_STICKY;
     }
 
