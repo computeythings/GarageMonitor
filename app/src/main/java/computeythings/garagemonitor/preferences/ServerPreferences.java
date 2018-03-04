@@ -1,6 +1,7 @@
 package computeythings.garagemonitor.preferences;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.util.Log;
 
@@ -9,6 +10,8 @@ import org.json.JSONObject;
 
 import java.util.HashSet;
 import java.util.Set;
+
+import computeythings.garagemonitor.services.TCPSocketService;
 
 /**
  * Class used to interact with the apps saved preferences
@@ -28,9 +31,11 @@ public class ServerPreferences {
     public static final String SERVER_CERT = "CERT_LOCATION";
 
     private SharedPreferences mPrefs;
+    private Context mContext;
 
     public ServerPreferences(Context context) {
-        mPrefs = context.getSharedPreferences(PREFERENCES_NAME, 0);
+        mContext = context;
+        mPrefs = mContext.getSharedPreferences(PREFERENCES_NAME, 0);
     }
 
     /*
@@ -86,6 +91,27 @@ public class ServerPreferences {
 
     public String getServerInfo(String serverName) {
         return mPrefs.getString(serverName, null);
+    }
+
+    public Intent getStartIntent(String serverName) {
+        Intent intent = new Intent(mContext, TCPSocketService.class);
+        try {
+            JSONObject server = new JSONObject(getServerInfo(
+                    serverName));
+            intent.putExtra(TCPSocketService.SERVER_ADDRESS, server.getString(
+                    ServerPreferences.SERVER_ADDRESS));
+            intent.putExtra(TCPSocketService.API_KEY, server.getString(
+                    ServerPreferences.SERVER_API_KEY));
+            intent.putExtra(TCPSocketService.PORT_NUMBER, server.getInt(
+                    ServerPreferences.SERVER_PORT));
+            intent.putExtra(TCPSocketService.CERT_ID, server.getString(
+                    ServerPreferences.SERVER_CERT));
+            return intent;
+        } catch (JSONException e) {
+            Log.e(TAG, "Invalid server settings");
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public boolean setSelectedServer(String serverName) {

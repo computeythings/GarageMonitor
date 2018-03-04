@@ -86,7 +86,8 @@ public class UIFragment extends Fragment
         mPreferences = new ServerPreferences(mContext);
 
         if (mConnection != null) {
-            mContext.bindService(getServerFromSettings(), mConnection, Context.BIND_AUTO_CREATE);
+            mContext.bindService(mPreferences.getStartIntent(mPreferences.getSelectedServer()),
+                    mConnection, Context.BIND_AUTO_CREATE);
             // Prepare to receive updates from this service
             LocalBroadcastManager.getInstance(mContext).registerReceiver((mDataReceiver),
                     new IntentFilter(TCPSocketService.DATA_RECEIVED)
@@ -112,7 +113,8 @@ public class UIFragment extends Fragment
         // Try connecting to server
         if (firstStart) {
             if (mPreferences.getSelectedServer() != null)
-                mContext.startService(getServerFromSettings());
+                mContext.startService(mPreferences.getStartIntent(
+                        mPreferences.getSelectedServer()));
 
             serverConnect();
             firstStart = false;
@@ -128,7 +130,8 @@ public class UIFragment extends Fragment
 
         // Create and bind a socket service based on currently selected server
         mConnection = new TCPServiceConnection();
-        mContext.bindService(getServerFromSettings(), mConnection, Context.BIND_AUTO_CREATE);
+        mContext.bindService(mPreferences.getStartIntent(mPreferences.getSelectedServer()),
+                mConnection, Context.BIND_AUTO_CREATE);
         // Prepare to receive updates from this service
         LocalBroadcastManager.getInstance(mContext).registerReceiver((mDataReceiver),
                 new IntentFilter(TCPSocketService.DATA_RECEIVED)
@@ -137,30 +140,6 @@ public class UIFragment extends Fragment
         Toolbar toolbar = mParentView.findViewById(R.id.toolbar);
         toolbar.setTitle(mPreferences.getSelectedServer());
         refreshDrawable();
-    }
-
-    /*
-        Create the intent to start the server from the selected server in the settings
-     */
-    private Intent getServerFromSettings() {
-        Intent intent = new Intent(mContext, TCPSocketService.class);
-        try {
-            JSONObject server = new JSONObject(mPreferences.getServerInfo(
-                    mPreferences.getSelectedServer()));
-            intent.putExtra(TCPSocketService.SERVER_ADDRESS, server.getString(
-                    ServerPreferences.SERVER_ADDRESS));
-            intent.putExtra(TCPSocketService.API_KEY, server.getString(
-                    ServerPreferences.SERVER_API_KEY));
-            intent.putExtra(TCPSocketService.PORT_NUMBER, server.getInt(
-                    ServerPreferences.SERVER_PORT));
-            intent.putExtra(TCPSocketService.CERT_ID, server.getString(
-                    ServerPreferences.SERVER_CERT));
-            return intent;
-        } catch (JSONException e) {
-            Log.e(TAG, "Invalid server settings");
-            e.printStackTrace();
-        }
-        return null;
     }
 
     /*
@@ -337,19 +316,22 @@ public class UIFragment extends Fragment
             if (currentServer == null) {
                 mPreferences.setSelectedServer(selected);
                 // start new service and connect
-                mContext.startService(getServerFromSettings());
+                mContext.startService(mPreferences.getStartIntent(
+                        mPreferences.getSelectedServer()));
                 serverConnect();
                 // Kill any existing server connections if they are available
             } else if (!currentServer.equals(selected)) {
                 mSavedState = STATE_DISCONNECTED;
                 // Kill the running service
                 mContext.unbindService(mConnection);
-                mContext.stopService(getServerFromSettings());
+                mContext.stopService(mPreferences.getStartIntent(
+                        mPreferences.getSelectedServer()));
 
                 mPreferences.setSelectedServer(selected);
                 updateServerList(false);
                 // start new service and connect
-                mContext.startService(getServerFromSettings());
+                mContext.startService(mPreferences.getStartIntent(
+                        mPreferences.getSelectedServer()));
                 serverConnect();
             }
             // Don't close the drawer if an invalid option was selected
@@ -380,7 +362,8 @@ public class UIFragment extends Fragment
                         server.equals(mPreferences.getSelectedServer()));
             }
             if (isFirstServer) {
-                mContext.startService(getServerFromSettings());
+                mContext.startService(mPreferences.getStartIntent(
+                        mPreferences.getSelectedServer()));
                 serverConnect();
             }
         } else
@@ -396,7 +379,7 @@ public class UIFragment extends Fragment
         mContext.unbindService(mConnection);
         mConnection = null;
         mSocketConnection = null;
-        mContext.stopService(getServerFromSettings());
+        mContext.stopService(mPreferences.getStartIntent(mPreferences.getSelectedServer()));
         mPreferences.removeServer(mPreferences.getSelectedServer());
         new AsyncSocketClose().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
         Toolbar toolbar = mParentView.findViewById(R.id.toolbar);
@@ -488,8 +471,10 @@ public class UIFragment extends Fragment
             // in that case we kill the currently running service create the new desired socket
             if (binder == null) {
                 mContext.stopService(new Intent(mContext, TCPSocketService.class));
-                mContext.startService(getServerFromSettings());
-                mContext.bindService(getServerFromSettings(), this,
+                mContext.startService(mPreferences.getStartIntent(
+                        mPreferences.getSelectedServer()));
+                mContext.bindService(mPreferences.getStartIntent(
+                        mPreferences.getSelectedServer()), this,
                         Context.BIND_AUTO_CREATE);
                 return;
             }
