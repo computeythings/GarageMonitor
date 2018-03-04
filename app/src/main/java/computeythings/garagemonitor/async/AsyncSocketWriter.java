@@ -14,8 +14,8 @@ import computeythings.garagemonitor.services.TCPSocketService;
 
 public class AsyncSocketWriter extends AsyncTask<TCPSocketService, Void, Boolean> {
     private static final String TAG = "SOCKET_WRITER";
-    private SocketResultListener mListener;
-    private String mMessage;
+    private final SocketResultListener mListener;
+    private final String mMessage;
 
     public AsyncSocketWriter(String message, SocketResultListener listener) {
         mListener = listener;

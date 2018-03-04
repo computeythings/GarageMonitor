@@ -10,7 +10,6 @@
 
     <group android:checkableBehavior="none">
         <item
-            android:id="@+id/add_server_option"
             android:icon="@drawable/ic_add_black_36dp"
             android:title="@string/add_server" />
     </group>

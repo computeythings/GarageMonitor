@@ -5,7 +5,6 @@
     android:orientation="vertical">
 
     <TextView
-        android:id="@+id/add_server_dialog_Nickname"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:labelFor="@id/server_name_value"
@@ -20,7 +19,6 @@
         android:inputType="text" />
 
     <TextView
-        android:id="@+id/add_server_dialog_address"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:labelFor="@+id/server_address_value"
@@ -34,7 +32,6 @@
         android:inputType="text" />
 
     <TextView
-        android:id="@+id/add_server_dialog_apikey"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:labelFor="@+id/apikey_value"
@@ -48,7 +45,6 @@
         android:inputType="text" />
 
     <TextView
-        android:id="@+id/add_server_dialog_port"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:labelFor="@+id/port_value"
@@ -63,7 +59,6 @@
         android:inputType="number" />
 
     <TextView
-        android:id="@+id/add_server_dialog_cert"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:labelFor="@+id/cert_value"

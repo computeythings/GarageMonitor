@@ -12,7 +12,6 @@ import android.os.Bundle;
 import android.provider.OpenableColumns;
 import android.support.annotation.NonNull;
 import android.support.v4.app.DialogFragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -35,9 +34,9 @@ public class AddServerDialog extends DialogFragment {
     public static final String EDIT_API_KEY = "EDIT_API_KEY";
     public static final String EDIT_PORT = "EDIT_PORT";
     public static final String EDIT_CERT = "EDIT_CERT";
-    public static final int READ_REQUEST_CODE = 444;
+    private static final int READ_REQUEST_CODE = 444;
 
-    ServerPreferences mPrefs;
+    private ServerPreferences mPrefs;
     private String mSelectedField;
     private TextView mNameField;
     private TextView mAPIKeyField;
@@ -91,7 +90,7 @@ public class AddServerDialog extends DialogFragment {
 
             String certLocation = getFilenameFromURI(Uri.parse(
                     args.getString(EDIT_CERT, "")));
-            if(certLocation.equals("Invalid File"))
+            if (certLocation.equals("Invalid File"))
                 mCertField.setHint("N/A");
             else
                 mCertField.setText(certLocation);
@@ -129,54 +128,6 @@ public class AddServerDialog extends DialogFragment {
         })
                 .setTitle("Add a Server");
         return builder.create();
-    }
-
-    /*
-        Search file browser on local storage
-     */
-    private void performFileSearch() {
-        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-        // Filter to only show results that can be "opened", such as a
-        // file (as opposed to a list of contacts or timezones)
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        // Allow any file type as cert
-        intent.setType("*/*");
-
-        startActivityForResult(intent, READ_REQUEST_CODE);
-    }
-
-    /*
-        Responds to the activity result once a user has chosen a file
-     */
-    @Override
-    public void onActivityResult(int requestCode, int resultCode,
-                                 Intent resultData) {
-        if (requestCode == READ_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-            if (resultData != null) {
-                Uri uri = resultData.getData();
-                if (uri != null) {
-                    mCertField.setText(getFilenameFromURI(uri));
-                    mCertURI = uri.toString();
-                }
-            }
-        }
-    }
-
-    /*
-        Pulls the selected file name from the uri and sets it as the cert field value
-     */
-    private String getFilenameFromURI(Uri uri) {
-        String filename = "Invalid File";
-        Cursor returnCursor = getContext().getContentResolver().query(uri,
-                null, null, null, null);
-
-        if (returnCursor != null && returnCursor.moveToFirst()) {
-            int nameIndex = returnCursor.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME);
-            filename = returnCursor.getString(nameIndex);
-            returnCursor.close();
-        }
-
-        return filename;
     }
 
     @Override
@@ -242,7 +193,7 @@ public class AddServerDialog extends DialogFragment {
             neutralButton.setTextColor(Color.RED);
         }
 
-        if(mSelectedField != null) {
+        if (mSelectedField != null) {
             switch (mSelectedField) {
                 case EDIT_NAME:
                     mNameField.requestFocus();
@@ -259,6 +210,37 @@ public class AddServerDialog extends DialogFragment {
         }
     }
 
+    /*
+        Search file browser on local storage
+     */
+    private void performFileSearch() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        // Filter to only show results that can be "opened", such as a
+        // file (as opposed to a list of contacts or timezones)
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        // Allow any file type as cert
+        intent.setType("*/*");
+
+        startActivityForResult(intent, READ_REQUEST_CODE);
+    }
+
+    /*
+        Pulls the selected file name from the uri and sets it as the cert field value
+     */
+    private String getFilenameFromURI(Uri uri) {
+        String filename = "Invalid File";
+        Cursor returnCursor = getContext().getContentResolver().query(uri,
+                null, null, null, null);
+
+        if (returnCursor != null && returnCursor.moveToFirst()) {
+            int nameIndex = returnCursor.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME);
+            filename = returnCursor.getString(nameIndex);
+            returnCursor.close();
+        }
+
+        return filename;
+    }
+
     private void confirmDelete(final OnServerListChangeListener host) {
         new AlertDialog.Builder(getContext())
                 .setTitle("Delete this server?")
@@ -272,13 +254,30 @@ public class AddServerDialog extends DialogFragment {
                 .setNegativeButton(android.R.string.no, null).show();
     }
 
+    /*
+        Responds to the activity result once a user has chosen a file
+     */
     @Override
-    public void onStop(){
-        if(mNameField.isFocused())
+    public void onActivityResult(int requestCode, int resultCode,
+                                 Intent resultData) {
+        if (requestCode == READ_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            if (resultData != null) {
+                Uri uri = resultData.getData();
+                if (uri != null) {
+                    mCertField.setText(getFilenameFromURI(uri));
+                    mCertURI = uri.toString();
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onStop() {
+        if (mNameField.isFocused())
             mSelectedField = EDIT_NAME;
-        if(mAPIKeyField.isFocused())
+        if (mAPIKeyField.isFocused())
             mSelectedField = EDIT_API_KEY;
-        if(mPortField.isFocused())
+        if (mPortField.isFocused())
             mSelectedField = EDIT_PORT;
         super.onStop();
     }

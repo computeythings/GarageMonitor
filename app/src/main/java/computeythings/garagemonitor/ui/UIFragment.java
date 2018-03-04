@@ -106,42 +106,6 @@ public class UIFragment extends Fragment
         mSavedState = STATE_DISCONNECTED;
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-
-        // Try connecting to server
-        if (firstStart) {
-            if (mPreferences.getSelectedServer() != null)
-                mContext.startService(mPreferences.getStartIntent(
-                        mPreferences.getSelectedServer()));
-
-            serverConnect();
-            firstStart = false;
-        }
-    }
-
-    /*
-        Connects to the last server that was connected by binding to the running TCPSocketService
-     */
-    private void serverConnect() {
-        if (mPreferences.getSelectedServer() == null)
-            return; // Quit if there is no valid server to connect to
-
-        // Create and bind a socket service based on currently selected server
-        mConnection = new TCPServiceConnection();
-        mContext.bindService(mPreferences.getStartIntent(mPreferences.getSelectedServer()),
-                mConnection, Context.BIND_AUTO_CREATE);
-        // Prepare to receive updates from this service
-        LocalBroadcastManager.getInstance(mContext).registerReceiver((mDataReceiver),
-                new IntentFilter(TCPSocketService.DATA_RECEIVED)
-        );
-        // Update toolbar title to reflect the currently selected server
-        Toolbar toolbar = mParentView.findViewById(R.id.toolbar);
-        toolbar.setTitle(mPreferences.getSelectedServer());
-        refreshDrawable();
-    }
-
     /*
         Create host view
      */
@@ -210,6 +174,21 @@ public class UIFragment extends Fragment
         }
 
         refreshDrawable();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        // Try connecting to server
+        if (firstStart) {
+            if (mPreferences.getSelectedServer() != null)
+                mContext.startService(mPreferences.getStartIntent(
+                        mPreferences.getSelectedServer()));
+
+            serverConnect();
+            firstStart = false;
+        }
     }
 
     private void refreshDrawable() {
@@ -374,6 +353,27 @@ public class UIFragment extends Fragment
         toolbar.setTitle(mPreferences.getSelectedServer());
     }
 
+    /*
+        Connects to the last server that was connected by binding to the running TCPSocketService
+     */
+    private void serverConnect() {
+        if (mPreferences.getSelectedServer() == null)
+            return; // Quit if there is no valid server to connect to
+
+        // Create and bind a socket service based on currently selected server
+        mConnection = new TCPServiceConnection();
+        mContext.bindService(mPreferences.getStartIntent(mPreferences.getSelectedServer()),
+                mConnection, Context.BIND_AUTO_CREATE);
+        // Prepare to receive updates from this service
+        LocalBroadcastManager.getInstance(mContext).registerReceiver((mDataReceiver),
+                new IntentFilter(TCPSocketService.DATA_RECEIVED)
+        );
+        // Update toolbar title to reflect the currently selected server
+        Toolbar toolbar = mParentView.findViewById(R.id.toolbar);
+        toolbar.setTitle(mPreferences.getSelectedServer());
+        refreshDrawable();
+    }
+
     public void serverDeleted() {
         // Remove all traces of current server and its connection
         mContext.unbindService(mConnection);
@@ -505,7 +505,7 @@ public class UIFragment extends Fragment
 
             if (intent.getAction() != null &&
                     intent.getAction().equals(TCPSocketService.DATA_RECEIVED)) {
-                if (status.equals(TCPSocketService.SERVERSIDE_DISCONNECT)) {
+                if (status.equals(TCPSocketService.SERVER_SIDE_DISCONNECT)) {
                     Log.d(TAG, "Received server-side disconnect");
                     mSavedState = STATE_DISCONNECTED;
                     if (mSocketConnection != null)

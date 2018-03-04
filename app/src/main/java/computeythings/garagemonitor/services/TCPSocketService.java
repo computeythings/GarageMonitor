@@ -43,10 +43,6 @@ import computeythings.garagemonitor.interfaces.SocketCreatedListener;
 
 public class TCPSocketService extends IntentService implements SocketCreatedListener {
     private static final String TAG = "SOCKET_SERVICE";
-    public static final String SEND_REFRESH = "REFRESH";
-    public static final String SOCKET_CLOSE = "KILL";
-    public static final String GARAGE_OPEN = "OPEN_GARAGE";
-    public static final String GARAGE_CLOSE = "CLOSE_GARAGE";
     public static final String SERVER_ADDRESS =
             "computeythings.garagemonitor.services.TCPSocketService.SERVER";
     public static final String API_KEY =
@@ -59,10 +55,14 @@ public class TCPSocketService extends IntentService implements SocketCreatedList
             "computeythings.garagemonitor.services.TCPSocketService.NEW_DATA";
     public static final String DATA =
             "computeythings.garagemonitor.services.TCPSocketService.DATA_PAYLOAD";
-    public static final String SERVERSIDE_DISCONNECT =
+    public static final String SERVER_SIDE_DISCONNECT =
             "computeythings.garagemonitor.services.TCPSocketService.SERVER_DISCONNECT";
     public static final String CONNECTION_ERROR =
             "computeythings.garagemonitor.services.TCPSocketService.CONNECTION_ERROR";
+    public static final String SEND_REFRESH = "REFRESH";
+    public static final String GARAGE_OPEN = "OPEN_GARAGE";
+    public static final String GARAGE_CLOSE = "CLOSE_GARAGE";
+    private static final String SOCKET_CLOSE = "KILL";
     private String mServerAddress;
     private String mApiKey;
     private int mPort;
@@ -261,7 +261,7 @@ public class TCPSocketService extends IntentService implements SocketCreatedList
      */
     private static class DataReceiver extends AsyncTask<SSLSocket, String, Void> {
         private static final String TAG = "DATA_RECEIVER_THREAD";
-        LocalBroadcastManager mBroadcaster;
+        final LocalBroadcastManager mBroadcaster;
 
         DataReceiver(LocalBroadcastManager broadcaster) {
             this.mBroadcaster = broadcaster;
@@ -290,7 +290,7 @@ public class TCPSocketService extends IntentService implements SocketCreatedList
                 Log.w(TAG, "Disconnected from server");
                 e.printStackTrace();
             }
-            broadcastMessage(SERVERSIDE_DISCONNECT);
+            broadcastMessage(SERVER_SIDE_DISCONNECT);
             return null;
         }
 

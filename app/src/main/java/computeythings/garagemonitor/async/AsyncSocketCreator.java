@@ -29,8 +29,8 @@ import computeythings.garagemonitor.services.TCPSocketService;
 
 public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
     private static final String TAG = "SOCKET_CREATOR";
-    private SSLSocketFactory mSocketFactory;
-    private SocketCreatedListener mListener;
+    private final SSLSocketFactory mSocketFactory;
+    private final SocketCreatedListener mListener;
     private String errorMsg;
 
     public AsyncSocketCreator(SSLSocketFactory socketFactory,

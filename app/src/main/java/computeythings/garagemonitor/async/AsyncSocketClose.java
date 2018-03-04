@@ -7,7 +7,7 @@ import computeythings.garagemonitor.services.TCPSocketService;
 
 /**
  * Asynchronous thread for closing an open connection to avoid networking on main thread
- *
+ * <p>
  * Created by bryan on 2/6/18.
  */
 
