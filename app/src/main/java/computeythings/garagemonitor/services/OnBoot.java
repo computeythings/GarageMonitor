@@ -23,6 +23,7 @@ public class OnBoot extends BroadcastReceiver {
 
         ServerPreferences prefs = new ServerPreferences(context);
 
-        context.startService(prefs.getStartIntent(prefs.getSelectedServer()));
+        if(prefs.getSelectedServer() != null)
+            context.startService(prefs.getStartIntent(prefs.getSelectedServer()));
     }
 }
