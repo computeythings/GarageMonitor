@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.provider.OpenableColumns;
 import android.support.annotation.NonNull;
 import android.support.v4.app.DialogFragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -37,6 +38,7 @@ public class AddServerDialog extends DialogFragment {
     public static final int READ_REQUEST_CODE = 444;
 
     ServerPreferences mPrefs;
+    private String mSelectedField;
     private TextView mNameField;
     private TextView mAPIKeyField;
     private TextView mAddressField;
@@ -239,6 +241,22 @@ public class AddServerDialog extends DialogFragment {
             Button neutralButton = self.getButton(Dialog.BUTTON_NEUTRAL);
             neutralButton.setTextColor(Color.RED);
         }
+
+        if(mSelectedField != null) {
+            switch (mSelectedField) {
+                case EDIT_NAME:
+                    mNameField.requestFocus();
+                    break;
+                case EDIT_API_KEY:
+                    mAPIKeyField.requestFocus();
+                    break;
+                case EDIT_PORT:
+                    mPortField.setSelected(true);
+                    break;
+                default:
+                    mNameField.setSelected(true);
+            }
+        }
     }
 
     private void confirmDelete(final OnServerListChangeListener host) {
@@ -252,5 +270,16 @@ public class AddServerDialog extends DialogFragment {
                     }
                 })
                 .setNegativeButton(android.R.string.no, null).show();
+    }
+
+    @Override
+    public void onStop(){
+        if(mNameField.isFocused())
+            mSelectedField = EDIT_NAME;
+        if(mAPIKeyField.isFocused())
+            mSelectedField = EDIT_API_KEY;
+        if(mPortField.isFocused())
+            mSelectedField = EDIT_PORT;
+        super.onStop();
     }
 }

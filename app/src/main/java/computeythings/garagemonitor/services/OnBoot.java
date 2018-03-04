@@ -11,6 +11,9 @@ import org.json.JSONObject;
 import computeythings.garagemonitor.preferences.ServerPreferences;
 
 /**
+ * BroadcastReceiver to receive on boot signal. Starts the service which listens to the currently
+ * selected server.
+ *
  * Created by bryan on 3/3/18.
  */
 
@@ -19,6 +22,9 @@ public class OnBoot extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        if(!Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction()))
+            return;
+
         ServerPreferences prefs = new ServerPreferences(context);
         Intent startServiceIntent = new Intent(context, TCPSocketService.class);
 
