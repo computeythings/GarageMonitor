@@ -88,10 +88,6 @@ public class UIFragment extends Fragment
         if (mConnection != null) {
             mContext.bindService(mPreferences.getStartIntent(mPreferences.getSelectedServer()),
                     mConnection, Context.BIND_AUTO_CREATE);
-            // Prepare to receive updates from this service
-            LocalBroadcastManager.getInstance(mContext).registerReceiver((mDataReceiver),
-                    new IntentFilter(TCPSocketService.DATA_RECEIVED)
-            );
         }
         super.onAttach(context);
     }
@@ -104,6 +100,12 @@ public class UIFragment extends Fragment
         mDataReceiver = new TCPBroadcastReceiver();
         firstStart = true;
         mSavedState = STATE_DISCONNECTED;
+
+
+        // Prepare to receive updates from this service
+        LocalBroadcastManager.getInstance(mContext).registerReceiver((mDataReceiver),
+                new IntentFilter(TCPSocketService.DATA_RECEIVED)
+        );
     }
 
     /*
@@ -303,6 +305,7 @@ public class UIFragment extends Fragment
                 mSavedState = STATE_DISCONNECTED;
                 // Kill the running service
                 mContext.unbindService(mConnection);
+                mSocketBound = false;
                 mContext.stopService(mPreferences.getStartIntent(
                         mPreferences.getSelectedServer()));
 
@@ -364,14 +367,9 @@ public class UIFragment extends Fragment
         mConnection = new TCPServiceConnection();
         mContext.bindService(mPreferences.getStartIntent(mPreferences.getSelectedServer()),
                 mConnection, Context.BIND_AUTO_CREATE);
-        // Prepare to receive updates from this service
-        LocalBroadcastManager.getInstance(mContext).registerReceiver((mDataReceiver),
-                new IntentFilter(TCPSocketService.DATA_RECEIVED)
-        );
         // Update toolbar title to reflect the currently selected server
         Toolbar toolbar = mParentView.findViewById(R.id.toolbar);
         toolbar.setTitle(mPreferences.getSelectedServer());
-        refreshDrawable();
     }
 
     public void serverDeleted() {
