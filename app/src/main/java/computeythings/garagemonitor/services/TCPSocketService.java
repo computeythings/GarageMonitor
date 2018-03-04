@@ -71,7 +71,7 @@ public class TCPSocketService extends IntentService implements SocketCreatedList
     private LocalBroadcastManager mBroadcaster;
     private DataReceiver mReceiverThread;
     private final SocketServiceBinder mBinder = new SocketServiceBinder();
-    private boolean mRunning = false;
+    private boolean mRunning;
 
     public TCPSocketService() {
         super("TCPSocketService");
@@ -82,16 +82,13 @@ public class TCPSocketService extends IntentService implements SocketCreatedList
         super.onCreate();
         Log.d(TAG, "New socket service");
         mBroadcaster = LocalBroadcastManager.getInstance(this);
-
-        // Open socket with new server properties
-        socketOpen();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         // Load in server properties
         try {
-            if(!mRunning) { // only set these values on the first start command
+            if (!mRunning) { // only set these values on the first start command
                 mServerAddress = intent.getStringExtra(SERVER_ADDRESS);
                 mApiKey = intent.getStringExtra(API_KEY);
                 mPort = intent.getIntExtra(PORT_NUMBER, -1);
@@ -101,6 +98,9 @@ public class TCPSocketService extends IntentService implements SocketCreatedList
             Log.e(TAG, "Missing server components");
             e.printStackTrace();
         }
+
+        // Open socket with new server properties
+        socketOpen();
 
         mRunning = true;
         return START_NOT_STICKY;

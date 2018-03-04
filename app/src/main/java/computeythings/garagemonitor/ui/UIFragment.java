@@ -64,7 +64,6 @@ public class UIFragment extends Fragment
     private static final String STATE_DISCONNECTED = "DISCONNECTED";
 
     private String mSavedState;
-    private boolean firstStart;
 
     private Context mContext;
     private View mParentView;
@@ -83,12 +82,6 @@ public class UIFragment extends Fragment
     @Override
     public void onAttach(Context context) {
         mContext = context;
-        mPreferences = new ServerPreferences(mContext);
-
-        if (mConnection != null) {
-            mContext.bindService(mPreferences.getStartIntent(mPreferences.getSelectedServer()),
-                    mConnection, Context.BIND_AUTO_CREATE);
-        }
         super.onAttach(context);
     }
 
@@ -97,9 +90,13 @@ public class UIFragment extends Fragment
         super.onCreate(savedInstanceState);
         setRetainInstance(true); // Enable fragment persist on configuration change
         setHasOptionsMenu(true); // Enable settings menu
+
+        // Data receiver and preferences persist over multiple connections
         mDataReceiver = new TCPBroadcastReceiver();
-        firstStart = true;
-        mSavedState = STATE_DISCONNECTED;
+        mPreferences = new ServerPreferences(mContext);
+
+        if (mPreferences.getSelectedServer() != null)
+            mContext.startService(mPreferences.getStartIntent(mPreferences.getSelectedServer()));
     }
 
     /*
@@ -179,15 +176,7 @@ public class UIFragment extends Fragment
         LocalBroadcastManager.getInstance(mContext).registerReceiver((mDataReceiver),
                 new IntentFilter(TCPSocketService.DATA_RECEIVED)
         );
-        // Try connecting to server
-        if (firstStart) {
-            if (mPreferences.getSelectedServer() != null)
-                mContext.startService(mPreferences.getStartIntent(
-                        mPreferences.getSelectedServer()));
-
-            serverConnect();
-            firstStart = false;
-        }
+        serverConnect();
     }
 
     private void refreshDrawable() {
@@ -364,9 +353,6 @@ public class UIFragment extends Fragment
         mConnection = new TCPServiceConnection();
         mContext.bindService(mPreferences.getStartIntent(mPreferences.getSelectedServer()),
                 mConnection, Context.BIND_AUTO_CREATE);
-        // Update toolbar title to reflect the currently selected server
-        Toolbar toolbar = mParentView.findViewById(R.id.toolbar);
-        toolbar.setTitle(mPreferences.getSelectedServer());
     }
 
     public void serverDeleted() {
