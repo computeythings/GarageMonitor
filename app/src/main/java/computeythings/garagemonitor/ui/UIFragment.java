@@ -100,12 +100,6 @@ public class UIFragment extends Fragment
         mDataReceiver = new TCPBroadcastReceiver();
         firstStart = true;
         mSavedState = STATE_DISCONNECTED;
-
-
-        // Prepare to receive updates from this service
-        LocalBroadcastManager.getInstance(mContext).registerReceiver((mDataReceiver),
-                new IntentFilter(TCPSocketService.DATA_RECEIVED)
-        );
     }
 
     /*
@@ -181,7 +175,10 @@ public class UIFragment extends Fragment
     @Override
     public void onResume() {
         super.onResume();
-
+        // Prepare to receive updates from this service
+        LocalBroadcastManager.getInstance(mContext).registerReceiver((mDataReceiver),
+                new IntentFilter(TCPSocketService.DATA_RECEIVED)
+        );
         // Try connecting to server
         if (firstStart) {
             if (mPreferences.getSelectedServer() != null)
@@ -533,5 +530,4 @@ public class UIFragment extends Fragment
             refreshDrawable();
         }
     }
-
 }
