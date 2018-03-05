@@ -43,6 +43,7 @@ public class AddServerDialog extends DialogFragment {
     private TextView mAddressField;
     private TextView mPortField;
     private TextView mCertField;
+    private TextView mClearCertButton;
     private String mCertURI;
     private boolean isFormValid = false;
     private boolean isEdit = false;
@@ -62,6 +63,17 @@ public class AddServerDialog extends DialogFragment {
 
         final View dialogLayout = inflater.inflate(R.layout.dialog_addserver, null);
         builder.setView(dialogLayout);
+
+        mClearCertButton = dialogLayout.findViewById(R.id.clear_text_button);
+        mClearCertButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mCertField.setText("");
+                mCertURI = null;
+                mClearCertButton.setVisibility(View.GONE);
+            }
+        });
+
         mNameField = dialogLayout.findViewById(R.id.server_name_value);
         mAddressField = dialogLayout.findViewById(R.id.server_address_value);
         mAPIKeyField = dialogLayout.findViewById(R.id.apikey_value);
@@ -92,8 +104,10 @@ public class AddServerDialog extends DialogFragment {
                     args.getString(EDIT_CERT, "")));
             if (certLocation.equals("Invalid File"))
                 mCertField.setHint("N/A");
-            else
+            else {
                 mCertField.setText(certLocation);
+                mClearCertButton.setVisibility(View.VISIBLE);
+            }
 
             mCertURI = args.getString(EDIT_CERT);
 
@@ -266,6 +280,7 @@ public class AddServerDialog extends DialogFragment {
                 if (uri != null) {
                     mCertField.setText(getFilenameFromURI(uri));
                     mCertURI = uri.toString();
+                    mClearCertButton.setVisibility(View.VISIBLE);
                 }
             }
         }

@@ -81,6 +81,18 @@
             android:scrollHorizontally="true"
             android:hint="@string/cert_hint"/>
 
+        <TextView
+            android:id="@+id/clear_text_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:layout_gravity="end|center_vertical"
+            android:text="X"
+            android:textColor="@android:color/holo_red_light"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif"
+            android:visibility="gone" />
+
         <Button
             android:id="@+id/cert_search_btn"
             android:layout_width="wrap_content"
