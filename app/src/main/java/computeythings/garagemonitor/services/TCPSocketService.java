@@ -246,8 +246,10 @@ public class TCPSocketService extends IntentService implements SocketCreatedList
             mReceiverThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
         } else {
             Intent intent = new Intent(CONNECTION_ERROR);
-            intent.putExtra(DATA, errorMsg);
-            mBroadcaster.sendBroadcast(intent);
+            if(errorMsg != null) {
+                intent.putExtra(DATA, errorMsg);
+                mBroadcaster.sendBroadcast(intent);
+            }
         }
     }
 

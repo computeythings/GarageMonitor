@@ -44,7 +44,7 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
 
     @Override
     protected SSLSocket doInBackground(String... serverInfo) {
-        SSLSocket socket = null;
+        SSLSocket socket;
         String server = serverInfo[0];
         int port = Integer.parseInt(serverInfo[1]);
         String api = serverInfo[2];
@@ -59,6 +59,7 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
         } catch (IOException e) {
             Log.e(TAG, "Error creating socket to " + server + " on socket " + port);
             e.printStackTrace();
+            return null;
         }
 
         try {
@@ -69,8 +70,7 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
             e.printStackTrace();
 
             try {
-                if (socket != null)
-                    socket.close();
+                socket.close();
             } catch (IOException ex) {
                 Log.e(TAG, "Could not close socket.");
                 ex.printStackTrace();
