@@ -17,6 +17,12 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 import computeythings.garagemonitor.R;
 import computeythings.garagemonitor.preferences.ServerPreferences;
 
@@ -45,7 +51,6 @@ public class AddServerDialog extends DialogFragment {
     private TextView mCertField;
     private TextView mClearCertButton;
     private String mCertURI;
-    private boolean isFormValid = false;
     private boolean isEdit = false;
 
     public interface OnServerListChangeListener {
@@ -100,11 +105,11 @@ public class AddServerDialog extends DialogFragment {
             mAPIKeyField.setText(args.getString(EDIT_API_KEY, ""));
             mPortField.setText(args.getString(EDIT_PORT, ""));
 
-            String certLocation = getFilenameFromURI(Uri.parse(
-                    args.getString(EDIT_CERT, "")));
-            if (certLocation.equals("Invalid File"))
+            String location = args.getString(EDIT_CERT, "");
+            if (location.equals(""))
                 mCertField.setHint("N/A");
             else {
+                String certLocation = location.substring(location.lastIndexOf(File.separator) + 1);
                 mCertField.setText(certLocation);
                 mClearCertButton.setVisibility(View.VISIBLE);
             }
@@ -177,8 +182,15 @@ public class AddServerDialog extends DialogFragment {
                             mAddressField.setError("You must add a server.");
                         return;
                     }
-                    isFormValid = true;
 
+                    try {
+                        // Attempt to save any uploaded cert locally
+                        saveCertToServer(serverName);
+                    } catch (IOException e) {
+                        mCertField.setError("Error accessing certificate");
+                        e.printStackTrace();
+                        return;
+                    }
                     // Store new server info in preferences
                     mPrefs.addServer(serverName, serverAddress, serverApiKey,
                             Integer.parseInt(serverPort), mCertURI);
@@ -197,10 +209,7 @@ public class AddServerDialog extends DialogFragment {
                         ((OnServerListChangeListener) getHost()).onServerAdded(false);
                     }
 
-                    //Do stuff, possibly set wantToCloseDialog to true then...
-                    if (isFormValid)
-                        dismiss();
-                    //else dialog stays open. Make sure you have an obvious way to close the dialog especially if you set cancellable to false.
+                    dismiss();
                 }
             });
             Button neutralButton = self.getButton(Dialog.BUTTON_NEUTRAL);
@@ -225,6 +234,22 @@ public class AddServerDialog extends DialogFragment {
     }
 
     /*
+        Option dialog to confirm deletion of server
+     */
+    private void confirmDelete(final OnServerListChangeListener host) {
+        new AlertDialog.Builder(getContext())
+                .setTitle("Delete this server?")
+                .setMessage("Do you really want to delete this server?")
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        host.onServerDeleted();
+                    }
+                })
+                .setNegativeButton(android.R.string.no, null).show();
+    }
+
+    /*
         Search file browser on local storage
      */
     private void performFileSearch() {
@@ -236,6 +261,24 @@ public class AddServerDialog extends DialogFragment {
         intent.setType("*/*");
 
         startActivityForResult(intent, READ_REQUEST_CODE);
+    }
+
+    /*
+        Responds to the activity result once a user has chosen a file from performFileSearch
+     */
+    @Override
+    public void onActivityResult(int requestCode, int resultCode,
+                                 Intent resultData) {
+        if (requestCode == READ_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            if (resultData != null) {
+                Uri uri = resultData.getData();
+                if (uri != null) {
+                    mCertField.setText(getFilenameFromURI(uri));
+                    mCertURI = uri.toString();
+                    mClearCertButton.setVisibility(View.VISIBLE);
+                }
+            }
+        }
     }
 
     /*
@@ -255,35 +298,33 @@ public class AddServerDialog extends DialogFragment {
         return filename;
     }
 
-    private void confirmDelete(final OnServerListChangeListener host) {
-        new AlertDialog.Builder(getContext())
-                .setTitle("Delete this server?")
-                .setMessage("Do you really want to delete this server?")
-                .setIcon(android.R.drawable.ic_dialog_alert)
-                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        host.onServerDeleted();
-                    }
-                })
-                .setNegativeButton(android.R.string.no, null).show();
-    }
+    private void saveCertToServer(String server) throws IOException {
+        if (mCertURI.equals("")) // Don't need to save a non-existent cert
+            return;
 
-    /*
-        Responds to the activity result once a user has chosen a file
-     */
-    @Override
-    public void onActivityResult(int requestCode, int resultCode,
-                                 Intent resultData) {
-        if (requestCode == READ_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-            if (resultData != null) {
-                Uri uri = resultData.getData();
-                if (uri != null) {
-                    mCertField.setText(getFilenameFromURI(uri));
-                    mCertURI = uri.toString();
-                    mClearCertButton.setVisibility(View.VISIBLE);
+        File saveDir = new File(getContext().getFilesDir() + "/" + server);
+        if (!saveDir.exists()) {
+            if (!saveDir.mkdir()) {
+                throw new IOException("Certificate could not be saved.");
+            }
+        }
+
+        File saveLocation = new File(getContext().getFilesDir() + "/" + server + "/" +
+                mCertField.getText());
+        try (InputStream in = getContext().getContentResolver().openInputStream(Uri.parse(mCertURI))) {
+            try (OutputStream out = new FileOutputStream(saveLocation)) {
+                byte[] buffer = new byte[1024];
+                int length;
+                if(in != null) {
+                    while ((length = in.read(buffer)) > 0) {
+                        out.write(buffer, 0, length);
+                    }
+                } else {
+                    throw new IOException("Certificate could not be read.");
                 }
             }
         }
+        mCertURI = Uri.fromFile(saveLocation).toString();
     }
 
     @Override

@@ -134,6 +134,8 @@ public class TCPSocketService extends IntentService implements SocketCreatedList
         Creates trust manager using self signed certs stored in raw resources directory
      */
     private SSLSocketFactory createSocketFactory() {
+        if (mCertLocation == null || mCertLocation.equals(""))
+            return null;
         try {
             CertificateFactory cf = CertificateFactory.getInstance("X.509");
             Certificate ca;
@@ -246,7 +248,7 @@ public class TCPSocketService extends IntentService implements SocketCreatedList
             mReceiverThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
         } else {
             Intent intent = new Intent(CONNECTION_ERROR);
-            if(errorMsg != null) {
+            if (errorMsg != null) {
                 intent.putExtra(DATA, errorMsg);
                 mBroadcaster.sendBroadcast(intent);
             }
