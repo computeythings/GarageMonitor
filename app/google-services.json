@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "170252164931",
+    "firebase_url": "https://gonnelladev-piopener-2e8f0.firebaseio.com",
+    "project_id": "gonnelladev-piopener-2e8f0",
+    "storage_bucket": "gonnelladev-piopener-2e8f0.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:170252164931:android:f6b64cd722a65912",
+        "android_client_info": {
+          "package_name": "computeythings.garagemonitor"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "170252164931-nkk26gjmhe1rtkdqpppfkg74gnhn5amc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFkkZ527gpHP3XbRPyTMP88wGsh1G1et8"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
