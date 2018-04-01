@@ -483,22 +483,7 @@ public class UIFragment extends Fragment
                     // Data should always be received as a JSON String from the server
                     try {
                         JSONObject json = new JSONObject(status);
-                        switch((String) json.get(STATE)) {
-                            case STATE_OPEN:
-                                mSavedState = STATE_OPEN;
-                                break;
-                            case STATE_OPENING:
-                                mSavedState = STATE_OPENING;
-                                break;
-                            case STATE_CLOSED:
-                                mSavedState = STATE_CLOSED;
-                                break;
-                            case STATE_CLOSING:
-                                mSavedState = STATE_CLOSING;
-                                break;
-                            default:
-                                mSavedState = STATE_NONE;
-                        }
+                        mSavedState = json.getString(STATE);
                     } catch (JSONException e) {
                         Log.w(TAG, "Invalid JSON object: " + status);
                         e.printStackTrace();
