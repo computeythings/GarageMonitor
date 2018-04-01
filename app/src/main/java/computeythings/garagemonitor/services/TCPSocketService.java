@@ -1,15 +1,13 @@
 package computeythings.garagemonitor.services;
 
-import android.app.IntentService;
+import android.app.Service;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.IBinder;
-import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -41,7 +39,7 @@ import computeythings.garagemonitor.interfaces.SocketCreatedListener;
  * Created by bryan on 2/6/18.
  */
 
-public class TCPSocketService extends IntentService implements SocketCreatedListener {
+public class TCPSocketService extends Service implements SocketCreatedListener {
     private static final String TAG = "SOCKET_SERVICE";
     public static final String SERVER_ADDRESS =
             "computeythings.garagemonitor.services.TCPSocketService.SERVER";
@@ -72,10 +70,6 @@ public class TCPSocketService extends IntentService implements SocketCreatedList
     private DataReceiver mReceiverThread;
     private final SocketServiceBinder mBinder = new SocketServiceBinder();
     private boolean mRunning;
-
-    public TCPSocketService() {
-        super("TCPSocketService");
-    }
 
     @Override
     public void onCreate() {
@@ -117,17 +111,6 @@ public class TCPSocketService extends IntentService implements SocketCreatedList
         }
 
         return mBinder;
-    }
-
-    @Override
-    protected void onHandleIntent(@Nullable Intent intent) {
-        if (intent == null)
-            return;
-        // Do not start if values are still not valid
-        if (mServerAddress == null || mPort == -1 || mCertLocation == null || mApiKey == null) {
-            Toast.makeText(this, "Invalid server values.", Toast.LENGTH_SHORT).show();
-            stopSelf();
-        }
     }
 
     /*

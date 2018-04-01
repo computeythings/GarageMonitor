@@ -56,6 +56,7 @@ import computeythings.garagemonitor.services.TCPSocketService;
 public class UIFragment extends Fragment
         implements NavigationView.OnNavigationItemSelectedListener, SocketResultListener {
     private static final String TAG = "UI_Fragment";
+    private static final String STATE = "STATE";
     private static final String STATE_OPEN = "OPEN";
     private static final String STATE_OPENING = "OPENING";
     private static final String STATE_CLOSED = "CLOSED";
@@ -495,16 +496,21 @@ public class UIFragment extends Fragment
                     // Data should always be received as a JSON String from the server
                     try {
                         JSONObject json = new JSONObject(status);
-                        if ((Boolean) json.get(STATE_OPEN)) {
-                            mSavedState = STATE_OPEN;
-                        } else if ((Boolean) json.get(STATE_CLOSED)) {
-                            mSavedState = STATE_CLOSED;
-                        } else if ((Boolean) json.get(STATE_CLOSING)) {
-                            mSavedState = STATE_CLOSING;
-                        } else if ((Boolean) json.get(STATE_OPENING)) {
-                            mSavedState = STATE_OPENING;
-                        } else {
-                            mSavedState = STATE_NONE;
+                        switch((String) json.get(STATE)) {
+                            case STATE_OPEN:
+                                mSavedState = STATE_OPEN;
+                                break;
+                            case STATE_OPENING:
+                                mSavedState = STATE_OPENING;
+                                break;
+                            case STATE_CLOSED:
+                                mSavedState = STATE_CLOSED;
+                                break;
+                            case STATE_CLOSING:
+                                mSavedState = STATE_CLOSING;
+                                break;
+                            default:
+                                mSavedState = STATE_NONE;
                         }
                     } catch (JSONException e) {
                         Log.w(TAG, "Invalid JSON object: " + status);
