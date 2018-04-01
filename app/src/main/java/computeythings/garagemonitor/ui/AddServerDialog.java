@@ -85,7 +85,7 @@ public class AddServerDialog extends DialogFragment {
         mPortField = dialogLayout.findViewById(R.id.port_value);
         mCertField = dialogLayout.findViewById(R.id.cert_value);
 
-        // Upload cert file from local storage
+        // upload cert file from local storage
         Button certSearchButton = dialogLayout.findViewById(R.id.cert_search_btn);
         certSearchButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -97,7 +97,7 @@ public class AddServerDialog extends DialogFragment {
         if (args != null) { // args are null on add and initialized on edit
             mNameField.setText(args.getString(EDIT_NAME, ""));
 
-            // Address field shouldn't need to be changed so we'll disallow it
+            // address field shouldn't need to be changed so we'll disallow it
             mAddressField.setText(args.getString(EDIT_ADDRESS, ""));
             mAddressField.setFocusable(false);
             mAddressField.setBackground(null);
@@ -125,7 +125,7 @@ public class AddServerDialog extends DialogFragment {
             builder.setPositiveButton(R.string.update, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
-                        /* No implementation as it is overridden in onResume() */
+                        /* no implementation as it is overridden in onResume() */
                 }
             });
 
@@ -134,7 +134,7 @@ public class AddServerDialog extends DialogFragment {
             builder.setPositiveButton(R.string.add, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
-                        /* No implementation as it is overridden in onResume() */
+                        /* no implementation as it is overridden in onResume() */
                 }
             });
         }
@@ -153,7 +153,7 @@ public class AddServerDialog extends DialogFragment {
     public void onResume() {
         super.onResume();
 
-        // We have to define the onClick method for the positive button here in order to overwrite
+        // we have to define the onClick method for the positive button here in order to overwrite
         // the default behavior to dismiss the dialog regardless of form validity.
         AlertDialog self = (AlertDialog) getDialog();
         if (self != null) {
@@ -184,25 +184,25 @@ public class AddServerDialog extends DialogFragment {
                     }
 
                     try {
-                        // Attempt to save any uploaded cert locally
+                        // attempt to save any uploaded cert locally
                         saveCertToServer(serverName);
                     } catch (IOException e) {
                         mCertField.setError("Error accessing certificate");
                         e.printStackTrace();
                         return;
                     }
-                    // Store new server info in preferences
+                    // store new server info in preferences
                     mPrefs.addServer(serverName, serverAddress, serverApiKey,
                             Integer.parseInt(serverPort), mCertURI);
 
-                    // Send callback to host activity setting param to true if it is the first server
-                    // added to the application.
+                    // send callback to host activity setting param to true if it is the first
+                    // server added to the application.
                     if (mPrefs.getServerList().size() == 1) {
                         mPrefs.setSelectedServer(serverName);
                         ((OnServerListChangeListener) getHost()).onServerAdded(true);
                     } else {
                         if (isEdit) {
-                            // Delete the current server and re-add with new values.
+                            // delete the current server and re-add with new values.
                             mPrefs.removeServer(mPrefs.getSelectedServer());
                             mPrefs.setSelectedServer(serverName);
                         }
@@ -254,10 +254,10 @@ public class AddServerDialog extends DialogFragment {
      */
     private void performFileSearch() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-        // Filter to only show results that can be "opened", such as a
+        // filter to only show results that can be "opened", such as a
         // file (as opposed to a list of contacts or timezones)
         intent.addCategory(Intent.CATEGORY_OPENABLE);
-        // Allow any file type as cert
+        // allow any file type as cert
         intent.setType("*/*");
 
         startActivityForResult(intent, READ_REQUEST_CODE);
@@ -299,7 +299,7 @@ public class AddServerDialog extends DialogFragment {
     }
 
     private void saveCertToServer(String server) throws IOException {
-        if (mCertURI.equals("")) // Don't need to save a non-existent cert
+        if (mCertURI.equals("")) // don't need to save a non-existent cert
             return;
 
         File saveDir = new File(getContext().getFilesDir() + "/" + server);

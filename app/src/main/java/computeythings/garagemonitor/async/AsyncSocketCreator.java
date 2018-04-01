@@ -3,7 +3,9 @@ package computeythings.garagemonitor.async;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -18,7 +20,7 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
 import computeythings.garagemonitor.interfaces.SocketCreatedListener;
-import computeythings.garagemonitor.services.TCPSocketService;
+import computeythings.garagemonitor.ui.SocketConnector;
 
 
 /**
@@ -27,7 +29,7 @@ import computeythings.garagemonitor.services.TCPSocketService;
  * Created by bryan on 2/6/18.
  */
 
-public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
+public class AsyncSocketCreator extends AsyncTask<String, String, SSLSocket> {
     private static final String TAG = "SOCKET_CREATOR";
     private final SSLSocketFactory mSocketFactory;
     private final SocketCreatedListener mListener;
@@ -44,38 +46,50 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
 
     @Override
     protected SSLSocket doInBackground(String... serverInfo) {
-        SSLSocket socket;
-        String server = serverInfo[0];
-        int port = Integer.parseInt(serverInfo[1]);
+        SSLSocket socket = null;
+        String name = serverInfo[0];
+        String server = serverInfo[1];
         String api = serverInfo[2];
+        int port = Integer.parseInt(serverInfo[3]);
 
         try {
             Log.i(TAG, "Creating socket");
             Socket raw = new Socket(server, port);
-            socket = (SSLSocket) mSocketFactory.createSocket(raw, server, port, false);
+            socket = (SSLSocket) mSocketFactory.createSocket(raw, server, port, true);
+            // connect to the new SSL socket and send the API Key as verification
             OutputStream out = socket.getOutputStream();
             out.write(api.getBytes());
-            out.write(TCPSocketService.SEND_REFRESH.getBytes());
+            out.close();
+
+            // the socket should only send out one string and it will be the Document Ref ID
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            String data = null;
+            while(data == null || data.equals("")) {
+                data = in.readLine();
+            }
+            publishProgress(data); // update running app with ref ID
+            in.close();
         } catch (IOException e) {
             Log.e(TAG, "Error creating socket to " + server + " on socket " + port);
             e.printStackTrace();
-            return null;
         }
+
+
 
         try {
             if (!verifyHost(server, socket)) { // this will only happen if the socket is null
-                errorMsg = "Could not connect to server";
+                errorMsg = "Could not reach server";
             }
         } catch (SSLHandshakeException e) {
             e.printStackTrace();
 
             try {
-                socket.close();
+                if (socket != null)
+                    socket.close();
             } catch (IOException ex) {
                 Log.e(TAG, "Could not close socket.");
                 ex.printStackTrace();
             }
-            socket = null;
             errorMsg = "Could not verify hostname.\nPossible Man-in-the-middle attack!";
         }
 
@@ -83,18 +97,18 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
     }
 
     private boolean verifyHost(String server, SSLSocket socket) throws SSLHandshakeException {
-        if (socket == null) // Cannot verify host if socket is null
+        if (socket == null) // cannot verify host if socket is null
             return false;
 
-        // If the address is local we'll go ahead and skip hostname verification.
-        // If you've got malicious hosts within your local network you've got other problems.
+        // if the address is local we'll go ahead and skip hostname verification.
+        // if you've got malicious hosts within your local network you've got other problems.
         try {
             if (InetAddress.getByName(server).isSiteLocalAddress())
                 return true;
         } catch (UnknownHostException ignored) {
         }
 
-        // Hostname verification
+        // hostname verification
         HostnameVerifier verifier = HttpsURLConnection.getDefaultHostnameVerifier();
         SSLSession session = socket.getSession();
         if (!verifier.verify(server, session)) {
@@ -110,7 +124,13 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
     }
 
     @Override
+    protected void onProgressUpdate(String... progress) {
+        mListener.onSocketData(progress[0]);
+    }
+
+    @Override
     protected void onPostExecute(SSLSocket socket) {
-        mListener.onSocketReady(socket, errorMsg);
+        if(mListener != null)
+            mListener.onSocketReady(socket, errorMsg);
     }
 }

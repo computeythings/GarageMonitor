@@ -3,7 +3,10 @@ package computeythings.garagemonitor.async;
 import android.os.AsyncTask;
 import android.util.Log;
 
-import computeythings.garagemonitor.services.TCPSocketService;
+import java.io.IOException;
+import java.io.OutputStream;
+
+import javax.net.ssl.SSLSocket;
 
 /**
  * Asynchronous thread for closing an open connection to avoid networking on main thread
@@ -11,16 +14,25 @@ import computeythings.garagemonitor.services.TCPSocketService;
  * Created by bryan on 2/6/18.
  */
 
-public class AsyncSocketClose extends AsyncTask<TCPSocketService, Void, Void> {
+public class AsyncSocketClose extends AsyncTask<SSLSocket, Void, Void> {
     private static final String TAG = "SOCKET_CLOSE";
+    private static final String SOCKET_CLOSE = "KILL";
 
     @Override
-    protected Void doInBackground(TCPSocketService... tcpSocketServices) {
-        if (tcpSocketServices.length != 1 || tcpSocketServices[0] == null) {
+    protected Void doInBackground(SSLSocket... sockets) {
+        if (sockets.length != 1 || sockets[0] == null) {
             Log.e(TAG, "Incorrect SocketHandler parameters");
             return null;
         }
-        tcpSocketServices[0].socketClose();
+        SSLSocket socket = sockets[0];
+        try {
+            OutputStream out = socket.getOutputStream();
+            out.write(SOCKET_CLOSE.getBytes());
+            out.flush(); // Force flush to send data
+            socket.close(); // Close client side socket
+        } catch (IOException e) {
+            Log.w(TAG, "Server connection already closed.");
+        }
         return null;
     }
 }

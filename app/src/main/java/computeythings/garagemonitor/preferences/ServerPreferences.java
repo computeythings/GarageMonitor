@@ -1,17 +1,16 @@
 package computeythings.garagemonitor.preferences;
 
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.util.Log;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
-
-import computeythings.garagemonitor.services.TCPSocketService;
 
 /**
  * Class used to interact with the apps saved preferences
@@ -29,13 +28,12 @@ public class ServerPreferences {
     public static final String SERVER_API_KEY = "API_KEY";
     public static final String SERVER_PORT = "PORT";
     public static final String SERVER_CERT = "CERT_LOCATION";
+    public static final String SERVER_REFID = "SERVER_REFID";
 
     private final SharedPreferences mPrefs;
-    private final Context mContext;
 
     public ServerPreferences(Context context) {
-        mContext = context;
-        mPrefs = mContext.getSharedPreferences(PREFERENCES_NAME, 0);
+        mPrefs = context.getSharedPreferences(PREFERENCES_NAME, 0);
     }
 
     /*
@@ -57,12 +55,29 @@ public class ServerPreferences {
         }
 
         Set<String> serverList = getServerList();
-        serverList.add(name); // Add this server to the known list of servers
+        serverList.add(name); // add this server to the known list of servers
 
-        // Write new values to preferences
+        // write new values to preferences
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putString(name, json.toString());
         editor.putStringSet(SERVER_LIST, serverList);
+        return editor.commit();
+    }
+
+    public boolean setServerRefid(String serverName, String refId) {
+        JSONObject json;
+        try {
+            json = new JSONObject(mPrefs.getString(serverName, ""));
+            if(json.has(SERVER_REFID) && json.getString(SERVER_REFID).equals(refId))
+                return true; // no need to do anymore since the same ID is already stored.
+            json.put(SERVER_REFID, refId);
+        } catch (JSONException e) {
+            Log.d(TAG, "Could not parse info for " + serverName);
+            e.printStackTrace();
+            return false;
+        }
+        SharedPreferences.Editor editor = mPrefs.edit();
+        editor.putString(serverName, json.toString());
         return editor.commit();
     }
 
@@ -74,29 +89,24 @@ public class ServerPreferences {
         return mPrefs.getStringSet(SERVER_LIST, new HashSet<String>());
     }
 
-    public String getServerInfo(String serverName) {
-        return mPrefs.getString(serverName, null);
-    }
-
-    public Intent getStartIntent(String serverName) {
-        Intent intent = new Intent(mContext, TCPSocketService.class);
+    /*
+        Gets server info stored as JSON and converts it to a HashMap
+     */
+    public HashMap<String, String> getServerInfo(String serverName) {
+        HashMap<String, String> serverList = new HashMap<>();
         try {
-            JSONObject server = new JSONObject(getServerInfo(
-                    serverName));
-            intent.putExtra(TCPSocketService.SERVER_ADDRESS, server.getString(
-                    ServerPreferences.SERVER_ADDRESS));
-            intent.putExtra(TCPSocketService.API_KEY, server.getString(
-                    ServerPreferences.SERVER_API_KEY));
-            intent.putExtra(TCPSocketService.PORT_NUMBER, server.getInt(
-                    ServerPreferences.SERVER_PORT));
-            intent.putExtra(TCPSocketService.CERT_ID, server.getString(
-                    ServerPreferences.SERVER_CERT));
-            return intent;
+            JSONObject serverInfo = new JSONObject(mPrefs.getString(serverName, ""));
+            Iterator<String> it = serverInfo.keys();
+            String key;
+            while (it.hasNext()) {
+                key = it.next();
+                serverList.put(key, serverInfo.getString(key));
+            }
         } catch (JSONException e) {
-            Log.e(TAG, "Invalid server settings");
-            e.printStackTrace();
+            Log.e(TAG, "Failed to get info for " + serverName);
+            return null;
         }
-        return null;
+        return serverList;
     }
 
     public boolean setSelectedServer(String serverName) {
@@ -117,7 +127,7 @@ public class ServerPreferences {
         editor.remove(serverName); // remove server key and its values
         editor.putStringSet(SERVER_LIST, serverList); // write update server list
 
-        // If the server being removed is the current server, set current selected to null
+        // if the server being removed is the current server, set current selected to null
         if (mPrefs.getString(SELECTED_SERVER, "").equals(serverName))
             editor.putString(SELECTED_SERVER, null);
 

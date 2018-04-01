@@ -24,6 +24,6 @@ public class OnBoot extends BroadcastReceiver {
         ServerPreferences prefs = new ServerPreferences(context);
 
         if(prefs.getSelectedServer() != null)
-            context.startService(prefs.getStartIntent(prefs.getSelectedServer()));
+            context.startService(new Intent(context, FirestoreListenerService.class));
     }
 }
