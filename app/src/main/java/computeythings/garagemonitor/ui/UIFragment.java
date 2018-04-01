@@ -167,16 +167,6 @@ public class UIFragment extends Fragment
         refreshDrawable();
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        // Prepare to receive updates from this service
-        LocalBroadcastManager.getInstance(mContext).registerReceiver((mDataReceiver),
-                new IntentFilter(TCPSocketService.DATA_RECEIVED)
-        );
-        serverConnect();
-    }
-
     private void refreshDrawable() {
         if (mSavedState != null) {
             ImageView statusView = mParentView.findViewById(R.id.door_status);
@@ -203,6 +193,29 @@ public class UIFragment extends Fragment
 
             }
         }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Prepare to receive updates from this service
+        LocalBroadcastManager.getInstance(mContext).registerReceiver((mDataReceiver),
+                new IntentFilter(TCPSocketService.DATA_RECEIVED)
+        );
+        serverConnect();
+    }
+
+    /*
+        Connects to the last server that was connected by binding to the running TCPSocketService
+     */
+    private void serverConnect() {
+        if (mPreferences.getSelectedServer() == null)
+            return; // Quit if there is no valid server to connect to
+
+        // Create and bind a socket service based on currently selected server
+        mConnection = new TCPServiceConnection();
+        mContext.bindService(mPreferences.getStartIntent(mPreferences.getSelectedServer()),
+                mConnection, Context.BIND_AUTO_CREATE);
     }
 
     /*
@@ -332,19 +345,6 @@ public class UIFragment extends Fragment
             this.onPrepareOptionsMenu(mSettingsMenu);
         Toolbar toolbar = mParentView.findViewById(R.id.toolbar);
         toolbar.setTitle(mPreferences.getSelectedServer());
-    }
-
-    /*
-        Connects to the last server that was connected by binding to the running TCPSocketService
-     */
-    private void serverConnect() {
-        if (mPreferences.getSelectedServer() == null)
-            return; // Quit if there is no valid server to connect to
-
-        // Create and bind a socket service based on currently selected server
-        mConnection = new TCPServiceConnection();
-        mContext.bindService(mPreferences.getStartIntent(mPreferences.getSelectedServer()),
-                mConnection, Context.BIND_AUTO_CREATE);
     }
 
     public void serverDeleted() {
