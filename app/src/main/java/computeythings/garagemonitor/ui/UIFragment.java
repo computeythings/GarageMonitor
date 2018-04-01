@@ -95,9 +95,6 @@ public class UIFragment extends Fragment
         // Data receiver and preferences persist over multiple connections
         mDataReceiver = new TCPBroadcastReceiver();
         mPreferences = new ServerPreferences(mContext);
-
-        if (mPreferences.getSelectedServer() != null)
-            mContext.startService(mPreferences.getStartIntent(mPreferences.getSelectedServer()));
     }
 
     /*
@@ -284,8 +281,6 @@ public class UIFragment extends Fragment
             if (currentServer == null) {
                 mPreferences.setSelectedServer(selected);
                 // start new service and connect
-                mContext.startService(mPreferences.getStartIntent(
-                        mPreferences.getSelectedServer()));
                 serverConnect();
                 // Kill any existing server connections if they are available
             } else if (!currentServer.equals(selected)) {
@@ -293,14 +288,10 @@ public class UIFragment extends Fragment
                 // Kill the running service
                 mContext.unbindService(mConnection);
                 mSocketBound = false;
-                mContext.stopService(mPreferences.getStartIntent(
-                        mPreferences.getSelectedServer()));
 
                 mPreferences.setSelectedServer(selected);
                 updateServerList(false);
                 // start new service and connect
-                mContext.startService(mPreferences.getStartIntent(
-                        mPreferences.getSelectedServer()));
                 serverConnect();
             }
             // Don't close the drawer if an invalid option was selected
@@ -361,7 +352,6 @@ public class UIFragment extends Fragment
         mContext.unbindService(mConnection);
         mConnection = null;
         mSocketConnection = null;
-        mContext.stopService(mPreferences.getStartIntent(mPreferences.getSelectedServer()));
         mPreferences.removeServer(mPreferences.getSelectedServer());
         new AsyncSocketClose().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, mSocketConnection);
         Toolbar toolbar = mParentView.findViewById(R.id.toolbar);
@@ -452,9 +442,6 @@ public class UIFragment extends Fragment
             // If the binder is null then that means the socket connection no longer exists;
             // in that case we kill the currently running service create the new desired socket
             if (binder == null) {
-                mContext.stopService(new Intent(mContext, TCPSocketService.class));
-                mContext.startService(mPreferences.getStartIntent(
-                        mPreferences.getSelectedServer()));
                 mContext.bindService(mPreferences.getStartIntent(
                         mPreferences.getSelectedServer()), this,
                         Context.BIND_AUTO_CREATE);

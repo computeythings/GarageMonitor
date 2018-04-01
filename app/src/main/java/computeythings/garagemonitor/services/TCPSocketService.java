@@ -79,7 +79,7 @@ public class TCPSocketService extends Service implements SocketCreatedListener {
     }
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
+    public IBinder onBind(Intent intent) {
         // Load in server properties
         try {
             if (!mRunning) { // only set these values on the first start command
@@ -97,19 +97,6 @@ public class TCPSocketService extends Service implements SocketCreatedListener {
         socketOpen();
 
         mRunning = true;
-        return START_NOT_STICKY;
-    }
-
-    @Override
-    public IBinder onBind(Intent intent) {
-        if (intent == null || !mServerAddress.equals(intent.getStringExtra(SERVER_ADDRESS)) ||
-                !mApiKey.equals(intent.getStringExtra(API_KEY)) ||
-                mPort != intent.getIntExtra(PORT_NUMBER, -1) ||
-                !mCertLocation.equals(intent.getStringExtra(CERT_ID))) {
-            Log.d(TAG, "Attempting to rebind to socket belonging to different server");
-            return null;
-        }
-
         return mBinder;
     }
 
