@@ -259,7 +259,6 @@ public class SocketConnector implements SocketCreatedListener {
     public void onSocketData(String message) {
         if (message == null)
             return;
-
         // save the reference ID to app preferences
         new ServerPreferences(context).setServerRefid(name, message);
 

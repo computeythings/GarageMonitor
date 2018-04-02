@@ -86,6 +86,7 @@ public class UIFragment extends Fragment
         // create and bind a socket based on currently selected server
         mServer = SocketConnector.fromInfo(mPreferences.getServerInfo(currentServer), mContext,
                 this);
+        bindToService();
     }
 
     public boolean socketWrite(String message) {
@@ -128,8 +129,7 @@ public class UIFragment extends Fragment
         unbindFromService();
         mServer = null;
         mPreferences.removeServer(mPreferences.getSelectedServer());
-        Toolbar toolbar = mParentView.findViewById(R.id.toolbar);
-        toolbar.setTitle(R.string.app_name);
+        refreshDrawable();
 
         // update the server list
         updateServerList(false);
@@ -154,10 +154,17 @@ public class UIFragment extends Fragment
             }
         } else
             mServerMenu.add(R.string.empty_server_menu); // placeholder if there are no servers
-        if (mSettingsMenu != null)
+        if (mSettingsMenu != null) {
             this.onPrepareOptionsMenu(mSettingsMenu);
+        }
+
+        // Update toolbar title to reflect any newly selected/deselected server
         Toolbar toolbar = mParentView.findViewById(R.id.toolbar);
-        toolbar.setTitle(mPreferences.getSelectedServer());
+        if(mPreferences.getSelectedServer() != null) {
+            toolbar.setTitle(mPreferences.getSelectedServer());
+        } else {
+            toolbar.setTitle(R.string.app_name);
+        }
     }
 
     /*
@@ -230,8 +237,10 @@ public class UIFragment extends Fragment
                     break;
                 default:
                     statusView.setImageResource(R.drawable.garage_disconnected);
-
             }
+        } else {
+            // Show a loading wheel on boot (when mSavedState is null) until connected
+            mSwipeRefreshLayout.setRefreshing(true);
         }
     }
 
@@ -305,14 +314,13 @@ public class UIFragment extends Fragment
             // connect to the selected server
             if (currentServer == null) {
                 mPreferences.setSelectedServer(selected);
-                bindToService();
+                updateServerList(false);
                 // start new socket connection
                 serverConnect();
             // kill any existing server connections if they are available
             } else if (!currentServer.equals(selected)) {
                 unbindFromService();
                 mPreferences.setSelectedServer(selected);
-                bindToService();
                 updateServerList(false);
                 // start new socket connection
                 serverConnect();
@@ -331,7 +339,7 @@ public class UIFragment extends Fragment
     @Override
     public void onAttach(Context context) {
         mContext = context;
-        if(mPreferences.getSelectedServer() != null)
+        if(mPreferences != null && mPreferences.getSelectedServer() != null)
             bindToService();
         super.onAttach(context);
     }
@@ -364,7 +372,7 @@ public class UIFragment extends Fragment
 
         // navigation drawer setup
         Toolbar toolbar = mParentView.findViewById(R.id.toolbar);
-        if (mPreferences.getSelectedServer() != null)
+        if(mPreferences.getSelectedServer() != null)
             toolbar.setTitle(mPreferences.getSelectedServer());
         AppCompatActivity activity = (AppCompatActivity) getActivity();
         activity.setSupportActionBar(toolbar);
@@ -381,7 +389,6 @@ public class UIFragment extends Fragment
 
         // populate menu
         updateServerList(false);
-
         // setup swipe to refresh
         mSwipeRefreshLayout = mParentView.findViewById(R.id.swipe_refresh);
         mSwipeRefreshLayout.setOnRefreshListener(
@@ -427,18 +434,6 @@ public class UIFragment extends Fragment
     public void onDestroy() {
         socketClose();
         super.onDestroy();
-    }
-
-    /*
-        Receives data whenever the subscribed document is changed
-     */
-    @Override
-    public void onDataReceived(Map<String, Object> data) {
-        if (data.containsKey(FirestoreListenerService.STATE)) {
-            mSwipeRefreshLayout.setRefreshing(false);
-            mSavedState = data.get(FirestoreListenerService.STATE).toString();
-            refreshDrawable();
-        }
     }
 
     // Service Connection //
@@ -490,5 +485,23 @@ public class UIFragment extends Fragment
         mServiceConnection = null;
         mFirestoreService = null;
         mSocketBound = false;
+    }
+
+    /*
+        Receives data whenever the subscribed document is changed
+     */
+    @Override
+    public void onDataReceived(Map<String, Object> data) {
+        mSwipeRefreshLayout.setRefreshing(false);
+        if(data == null) {
+            Toast.makeText(mContext, "Could establish connection to server socket",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        if (data.containsKey(FirestoreListenerService.STATE)) {
+            mSavedState = data.get(FirestoreListenerService.STATE).toString();
+            refreshDrawable();
+        }
     }
 }

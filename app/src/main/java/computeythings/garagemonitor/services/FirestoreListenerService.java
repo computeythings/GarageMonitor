@@ -77,6 +77,7 @@ public class FirestoreListenerService extends IntentService {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        onHandleIntent(intent);
         return START_STICKY; // this service should always be running
     }
 
@@ -100,18 +101,17 @@ public class FirestoreListenerService extends IntentService {
         if (refId == null)
             return;
 
-        // swap out server name with ref ID if it exists
-        if (mDataListeners.containsValue(server)) {
-            for(FirebaseDataListener listener : mDataListeners.keySet()) {
-                if(mDataListeners.get(listener).equals(server)) {
-                    mDataListeners.put(listener, refId);
-                    mBinder.refreshData(listener);
-                }
-            }
-        }
-
         switch (intent.getAction()) {
             case FOLLOW_SERVER:
+                // swap out server name with ref ID if it exists
+                if (mDataListeners.containsValue(server)) {
+                    for(FirebaseDataListener listener : mDataListeners.keySet()) {
+                        if(mDataListeners.get(listener).equals(server)) {
+                            mDataListeners.put(listener, refId);
+                            mBinder.refreshData(listener);
+                        }
+                    }
+                }
                 subscribeTo(refId);
                 break;
             case UNFOLLOW_SERVER:
