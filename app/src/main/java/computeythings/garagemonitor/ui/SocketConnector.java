@@ -223,7 +223,7 @@ public class SocketConnector implements SocketCreatedListener {
         isConnected = false;
     }
 
-    private boolean isDisconnected() {
+    public boolean isDisconnected() {
         return !isConnected;
     }
 
