@@ -196,7 +196,7 @@ public class SocketConnector implements SocketCreatedListener {
                 try {
                     OutputStream out = socket.getOutputStream();
                     out.write(message.getBytes());
-                    out.flush(); // Force flush to send data
+                    out.close(); // Flush and close
                     success = true;
                 } catch (IOException | NullPointerException e) {
                     Log.w(TAG, "Error writing message " + message);
