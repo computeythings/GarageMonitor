@@ -160,7 +160,7 @@ public class UIFragment extends Fragment
 
         // Update toolbar title to reflect any newly selected/deselected server
         Toolbar toolbar = mParentView.findViewById(R.id.toolbar);
-        if(mPreferences.getSelectedServer() != null) {
+        if (mPreferences.getSelectedServer() != null) {
             toolbar.setTitle(mPreferences.getSelectedServer());
         } else {
             toolbar.setTitle(R.string.app_name);
@@ -207,7 +207,7 @@ public class UIFragment extends Fragment
     }
 
     private void refreshState() {
-        if(mSocketBound)
+        if (mSocketBound)
             mFirestoreService.refreshData(UIFragment.this);
     }
 
@@ -239,8 +239,10 @@ public class UIFragment extends Fragment
                     statusView.setImageResource(R.drawable.garage_disconnected);
             }
         } else {
-            // Show a loading wheel on boot (when mSavedState is null) until connected
-            mSwipeRefreshLayout.setRefreshing(true);
+            if (mPreferences.getSelectedServer() != null) {
+                // Show a loading wheel on boot (when mSavedState is null) until connected
+                mSwipeRefreshLayout.setRefreshing(true);
+            }
         }
     }
 
@@ -317,7 +319,7 @@ public class UIFragment extends Fragment
                 updateServerList(false);
                 // start new socket connection
                 serverConnect();
-            // kill any existing server connections if they are available
+                // kill any existing server connections if they are available
             } else if (!currentServer.equals(selected)) {
                 unbindFromService();
                 mPreferences.setSelectedServer(selected);
@@ -370,7 +372,7 @@ public class UIFragment extends Fragment
 
         // navigation drawer setup
         Toolbar toolbar = mParentView.findViewById(R.id.toolbar);
-        if(mPreferences.getSelectedServer() != null)
+        if (mPreferences.getSelectedServer() != null)
             toolbar.setTitle(mPreferences.getSelectedServer());
         AppCompatActivity activity = (AppCompatActivity) getActivity();
         activity.setSupportActionBar(toolbar);
@@ -445,7 +447,7 @@ public class UIFragment extends Fragment
         // Called when the connection with the service is established
         @Override
         public void onServiceConnected(ComponentName className, IBinder service) {
-            if(mPreferences.getSelectedServer() == null)
+            if (mPreferences.getSelectedServer() == null)
                 return;
             // because we have bound to an explicit service that is running in our own process,
             // we can cast its IBinder to a concrete class and directly access it.
@@ -455,7 +457,7 @@ public class UIFragment extends Fragment
 
             HashMap<String, String> currentServer = mPreferences
                     .getServerInfo(mPreferences.getSelectedServer());
-            if(currentServer.containsKey(ServerPreferences.SERVER_REFID)) {
+            if (currentServer.containsKey(ServerPreferences.SERVER_REFID)) {
                 mFirestoreService.addDataListener(currentServer.get(ServerPreferences.SERVER_REFID),
                         UIFragment.this);
                 mFirestoreService.refreshData(UIFragment.this);
@@ -493,7 +495,7 @@ public class UIFragment extends Fragment
     @Override
     public void onDataReceived(Map<String, Object> data) {
         mSwipeRefreshLayout.setRefreshing(false);
-        if(data == null) {
+        if (data == null) {
             Toast.makeText(mContext, "Could establish connection to server socket",
                     Toast.LENGTH_LONG).show();
             return;
