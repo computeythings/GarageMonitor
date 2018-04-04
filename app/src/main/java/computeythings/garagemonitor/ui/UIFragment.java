@@ -105,6 +105,7 @@ public class UIFragment extends Fragment
     public void socketClose() {
         if (mServer != null)
             mServer.socketClose();
+        mServer = null;
     }
 
     /*
@@ -424,7 +425,11 @@ public class UIFragment extends Fragment
         serverConnect();
     }
 
-    // TODO: stop connect onPause
+    @Override
+    public void onPause() {
+        socketClose();
+        super.onPause();
+    }
 
     @Override
     public void onDetach() {

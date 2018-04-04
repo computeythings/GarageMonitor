@@ -213,6 +213,9 @@ public class SocketConnector implements SocketCreatedListener {
         Attempts to gracefully close the SSLSocket connection.
      */
     void socketClose() {
+        if(sender != null)
+            sender.removeCallbacksAndMessages(null); // stop trying to reconnect
+
         if (isDisconnected())
             return; //what is dead may never die//
 
