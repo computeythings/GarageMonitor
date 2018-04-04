@@ -49,9 +49,6 @@ public class FirestoreListenerService extends IntentService {
     public FirestoreListenerService() {
         super("FirestoreListenerService");
     }
-    public FirestoreListenerService(String name) {
-        super(name);
-    }
 
     @Override
     public void onCreate() {
@@ -146,6 +143,7 @@ public class FirestoreListenerService extends IntentService {
                     Map<String, Object> data = documentSnapshot.getData();
                     Log.d(TAG, "Received data: " + data);
                     updateListener(refId, data);
+                    // if there is no active subscriber to the document ref, send a notification
                     if (!mDataListeners.containsValue(refId)) {
                         sendNotification(data.get(STATE).toString());
                     }

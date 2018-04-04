@@ -339,8 +339,6 @@ public class UIFragment extends Fragment
     @Override
     public void onAttach(Context context) {
         mContext = context;
-        if(mPreferences != null && mPreferences.getSelectedServer() != null)
-            bindToService();
         super.onAttach(context);
     }
 
@@ -423,6 +421,8 @@ public class UIFragment extends Fragment
         super.onResume();
         serverConnect();
     }
+
+    // TODO: stop connect onPause
 
     @Override
     public void onDetach() {
