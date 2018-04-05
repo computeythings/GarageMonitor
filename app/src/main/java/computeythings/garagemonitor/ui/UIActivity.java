@@ -49,14 +49,22 @@ public class UIActivity extends AppCompatActivity implements AddServerDialog.OnS
         Alert the UI fragment that a new server has been added
      */
     @Override
-    public void onServerAdded(boolean isFirstServer) {
+    public void onServerModify(String server) {
+        if(server == null) {
+            Log.e(TAG, "Attempting to add null server");
+            return;
+        }
         UIFragment ui = (UIFragment) getSupportFragmentManager().findFragmentById(R.id.ui_fragment);
-        ui.updateServerList(isFirstServer);
+        ui.serverModified(server);
     }
 
     @Override
-    public void onServerDeleted() {
+    public void onServerDeleted(String server) {
+        if(server == null) {
+            Log.e(TAG, "Attempting to delete null server");
+            return;
+        }
         UIFragment ui = (UIFragment) getSupportFragmentManager().findFragmentById(R.id.ui_fragment);
-        ui.serverDeleted();
+        ui.serverDeleted(server);
     }
 }

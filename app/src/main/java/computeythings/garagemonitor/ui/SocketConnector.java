@@ -179,12 +179,13 @@ public class SocketConnector implements SocketCreatedListener {
                 else {
                     onSocketReady(socket, null);
                 }
+            // If we couldn't connect to the socket, do a continuous reconnect attempt
             } catch (InterruptedException | ExecutionException | TimeoutException e) {
                 e.printStackTrace();
                 socketReconnect(UI_REQUEST_DELAY);
                 Toast.makeText(context, "Attempting to reconnect to server...",
                         Toast.LENGTH_LONG).show();
-                queueMessage(message);
+                queueMessage(message); // Save message and send again on reconnect
                 return;
             }
         }
@@ -263,7 +264,7 @@ public class SocketConnector implements SocketCreatedListener {
         if (message == null)
             return;
         // save the reference ID to app preferences
-        new ServerPreferences(context).setServerRefid(name, message);
+        new ServerPreferences(context).setServerRefId(name, message);
 
         // this should be handled by our intent service and subscribe to the document
         Intent updateRefIdIntent = new Intent(context, FirestoreListenerService.class);

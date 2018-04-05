@@ -51,12 +51,12 @@ public class AddServerDialog extends DialogFragment {
     private TextView mCertField;
     private TextView mClearCertButton;
     private String mCertURI;
-    private boolean isEdit = false;
+    private String mEditKey;
 
     public interface OnServerListChangeListener {
-        void onServerAdded(boolean isFirstServer);
+        void onServerModify(String server);
 
-        void onServerDeleted();
+        void onServerDeleted(String server);
     }
 
     @Override
@@ -96,6 +96,8 @@ public class AddServerDialog extends DialogFragment {
 
         if (args != null) { // args are null on add and initialized on edit
             mNameField.setText(args.getString(EDIT_NAME, ""));
+            // the server name is the key value in server prefs
+            mEditKey = args.getString(EDIT_NAME, "");
 
             // address field shouldn't need to be changed so we'll disallow it
             mAddressField.setText(args.getString(EDIT_ADDRESS, ""));
@@ -125,16 +127,14 @@ public class AddServerDialog extends DialogFragment {
             builder.setPositiveButton(R.string.update, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
-                        /* no implementation as it is overridden in onResume() */
+                    /* no implementation as it is overridden in onResume() */
                 }
             });
-
-            isEdit = true;
         } else {
             builder.setPositiveButton(R.string.add, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
-                        /* no implementation as it is overridden in onResume() */
+                    /* no implementation as it is overridden in onResume() */
                 }
             });
         }
@@ -191,23 +191,16 @@ public class AddServerDialog extends DialogFragment {
                         e.printStackTrace();
                         return;
                     }
+
+                    // If the key was changed, remove the key/value pair
+                    if(mEditKey != null && !serverName.equals(mEditKey))
+                        ((OnServerListChangeListener) getHost()).onServerDeleted(mEditKey);
                     // store new server info in preferences
                     mPrefs.addServer(serverName, serverAddress, serverApiKey,
                             Integer.parseInt(serverPort), mCertURI);
 
-                    // send callback to host activity setting param to true if it is the first
-                    // server added to the application.
-                    if (mPrefs.getServerList().size() == 1) {
-                        mPrefs.setSelectedServer(serverName);
-                        ((OnServerListChangeListener) getHost()).onServerAdded(true);
-                    } else {
-                        if (isEdit) {
-                            // delete the current server and re-add with new values.
-                            mPrefs.removeServer(mPrefs.getSelectedServer());
-                            mPrefs.setSelectedServer(serverName);
-                        }
-                        ((OnServerListChangeListener) getHost()).onServerAdded(false);
-                    }
+                    // send callback to host activity that a server was added
+                    ((OnServerListChangeListener) getHost()).onServerModify(serverName);
 
                     dismiss();
                 }
@@ -243,7 +236,7 @@ public class AddServerDialog extends DialogFragment {
                 .setIcon(android.R.drawable.ic_dialog_alert)
                 .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
-                        host.onServerDeleted();
+                        host.onServerDeleted(mEditKey);
                     }
                 })
                 .setNegativeButton(android.R.string.no, null).show();
@@ -315,7 +308,7 @@ public class AddServerDialog extends DialogFragment {
             try (OutputStream out = new FileOutputStream(saveLocation)) {
                 byte[] buffer = new byte[1024];
                 int length;
-                if(in != null) {
+                if (in != null) {
                     while ((length = in.read(buffer)) > 0) {
                         out.write(buffer, 0, length);
                     }

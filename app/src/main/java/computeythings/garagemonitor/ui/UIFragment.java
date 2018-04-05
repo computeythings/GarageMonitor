@@ -31,11 +31,10 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 
 import computeythings.garagemonitor.R;
-import computeythings.garagemonitor.interfaces.FirebaseDataListener;
+import computeythings.garagemonitor.interfaces.FirestoreUIListener;
 import computeythings.garagemonitor.interfaces.SocketResultListener;
 import computeythings.garagemonitor.preferences.ServerPreferences;
 import computeythings.garagemonitor.services.FirestoreListenerService;
@@ -49,7 +48,7 @@ import computeythings.garagemonitor.services.FirestoreListenerService.ServiceBin
 
 public class UIFragment extends Fragment
         implements NavigationView.OnNavigationItemSelectedListener, SocketResultListener,
-        FirebaseDataListener {
+        FirestoreUIListener {
     private static final String TAG = "UI_Fragment";
     private static final String STATE_OPEN = "OPEN";
     private static final String STATE_OPENING = "OPENING";
@@ -83,7 +82,7 @@ public class UIFragment extends Fragment
             return; // quit if there is no valid server to connect to
 
 
-        if(mServer == null || mServer.isDisconnected()) {
+        if (mServer == null || mServer.isDisconnected()) {
             String currentServer = mPreferences.getSelectedServer();
             // create and bind a socket based on currently selected server
             mServer = SocketConnector.fromInfo(mPreferences.getServerInfo(currentServer), mContext,
@@ -106,10 +105,10 @@ public class UIFragment extends Fragment
         Tell specified SocketConnector to close connection.
      */
     public void socketClose() {
-        if (mServer != null && mServer.isDisconnected()) {
+        if (mServer != null)
             mServer.socketClose();
-            mServer = null;
-        }
+        mServer = null;
+        mSavedState = STATE_DISCONNECTED;
     }
 
     /*
@@ -128,24 +127,34 @@ public class UIFragment extends Fragment
     /*
         Callback for when servers are deleted via server edit menu
      */
-    public void serverDeleted() {
-        // remove all traces of current server and its connection
-        mFirestoreService.unsubscribe(this); // Stop listening on this doc ref
-        unbindFromService();
-        mSavedState = STATE_DISCONNECTED;
-        mServer = null;
-        mPreferences.removeServer(mPreferences.getSelectedServer());
-        refreshDrawable();
+    public void serverDeleted(String server) {
+        if (server.equals(mPreferences.getSelectedServer())) {
+            // Stop listening on this doc ref
+            mFirestoreService.unsubscribe(this, getCurrentRefId());
+            unbindFromService();
+            socketClose();
+            refreshDrawable();
+        }
 
+        mPreferences.removeServer(mPreferences.getSelectedServer());
         // update the server list
-        updateServerList(false);
+        updateServerList();
+    }
+
+    public void serverModified(String server) {
+        if (mPreferences.getSelectedServer() == null) {
+            mPreferences.setSelectedServer(server);
+            serverConnect();
+        } else if(mPreferences.getSelectedServer().equals(server))
+            serverConnect();
+        updateServerList();
     }
 
     // UI setup and control //
     /*
         Updates the server list to the most current state
      */
-    public void updateServerList(boolean isFirstServer) {
+    private void updateServerList() {
         mServerMenu.clear(); // Complete reset
 
         // add all the servers in saved server list
@@ -154,9 +163,6 @@ public class UIFragment extends Fragment
             for (String server : serverList) {
                 mServerMenu.add(server).setCheckable(true).setChecked(
                         server.equals(mPreferences.getSelectedServer()));
-            }
-            if (isFirstServer) {
-                serverConnect();
             }
         } else
             mServerMenu.add(R.string.empty_server_menu); // placeholder if there are no servers
@@ -214,7 +220,7 @@ public class UIFragment extends Fragment
 
     private void refreshState() {
         if (mServiceBound)
-            mFirestoreService.refreshData(UIFragment.this);
+            mFirestoreService.refreshData(UIFragment.this, getCurrentRefId());
     }
 
     /*
@@ -223,10 +229,8 @@ public class UIFragment extends Fragment
     private void refreshDrawable() {
         if (mSavedState != null) {
             ImageView statusView = mParentView.findViewById(R.id.door_status);
-
-            if(statusView.getDrawable() instanceof AnimationDrawable) {
-                ((AnimationDrawable) statusView.getDrawable()).stop();
-            }
+            if (statusView == null)
+                return; // don't try to set drawable if the view doesn't exist
 
             switch (mSavedState) {
                 case STATE_OPEN:
@@ -327,15 +331,15 @@ public class UIFragment extends Fragment
             // connect to the selected server
             if (currentServer == null) {
                 mPreferences.setSelectedServer(selected);
-                updateServerList(false);
+                updateServerList();
                 // start new socket connection
                 serverConnect();
                 // kill any existing server connections if they are available
             } else if (!currentServer.equals(selected)) {
                 unbindFromService();
-                mSavedState = STATE_DISCONNECTED;
+                socketClose();
                 mPreferences.setSelectedServer(selected);
-                updateServerList(false);
+                updateServerList();
                 // start new socket connection
                 serverConnect();
             }
@@ -400,7 +404,7 @@ public class UIFragment extends Fragment
         mServerMenu = navDrawer.getMenu().getItem(0).getSubMenu();
 
         // populate menu
-        updateServerList(false);
+        updateServerList();
         // setup swipe to refresh
         mSwipeRefreshLayout = mParentView.findViewById(R.id.swipe_refresh);
         mSwipeRefreshLayout.setOnRefreshListener(
@@ -473,13 +477,13 @@ public class UIFragment extends Fragment
 
             HashMap<String, String> currentServer = mPreferences
                     .getServerInfo(mPreferences.getSelectedServer());
-            if (currentServer.containsKey(ServerPreferences.SERVER_REFID)) {
-                mFirestoreService.addDataListener(currentServer.get(ServerPreferences.SERVER_REFID),
-                        UIFragment.this);
-                mFirestoreService.refreshData(UIFragment.this);
-            } else
-                mFirestoreService.addDataListener(mPreferences.getSelectedServer(),
-                        UIFragment.this);
+            String refId = currentServer.get(ServerPreferences.SERVER_REFID);
+            if (refId != null) {
+                mFirestoreService.addDataListener(UIFragment.this, refId);
+            } else {
+                mFirestoreService.addDataListener(UIFragment.this,
+                        mPreferences.getSelectedServer());
+            }
         }
 
         // Called when the connection with the service disconnects unexpectedly
@@ -491,7 +495,7 @@ public class UIFragment extends Fragment
     }
 
     private void bindToService() {
-        if(!mServiceBound) {
+        if (!mServiceBound) {
             mServiceConnection = new FirestoreServiceConnection();
             mContext.bindService(new Intent(mContext, FirestoreListenerService.class),
                     mServiceConnection, Context.BIND_AUTO_CREATE);
@@ -499,8 +503,8 @@ public class UIFragment extends Fragment
     }
 
     private void unbindFromService() {
-        if(mServiceBound) {
-            mFirestoreService.removeDataListener(this);
+        if (mServiceBound) {
+            mFirestoreService.removeDataListener(this, getCurrentRefId());
             mContext.unbindService(mServiceConnection);
             mServiceConnection = null;
             mFirestoreService = null;
@@ -508,21 +512,23 @@ public class UIFragment extends Fragment
         }
     }
 
+    private String getCurrentRefId() {
+        return mPreferences.getServerInfo(mPreferences.getSelectedServer())
+                .get(ServerPreferences.SERVER_REFID);
+    }
+
     /*
         Receives data whenever the subscribed document is changed
      */
     @Override
-    public void onDataReceived(Map<String, Object> data) {
+    public void onDataReceived(String data) {
         mSwipeRefreshLayout.setRefreshing(false);
         if (data == null) {
             Toast.makeText(mContext, "Could establish connection to server socket",
                     Toast.LENGTH_LONG).show();
             return;
         }
-
-        if (data.containsKey(FirestoreListenerService.STATE)) {
-            mSavedState = data.get(FirestoreListenerService.STATE).toString();
-            refreshDrawable();
-        }
+        mSavedState = data;
+        refreshDrawable();
     }
 }

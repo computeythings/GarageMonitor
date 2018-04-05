@@ -64,7 +64,7 @@ public class ServerPreferences {
         return editor.commit();
     }
 
-    public boolean setServerRefid(String serverName, String refId) {
+    public boolean setServerRefId(String serverName, String refId) {
         JSONObject json;
         try {
             json = new JSONObject(mPrefs.getString(serverName, ""));
@@ -121,14 +121,13 @@ public class ServerPreferences {
         if (!serverList.contains(serverName))
             return true; // return true if the list doesn't already contain the server
 
-
         serverList.remove(serverName); // remove server from server list
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.remove(serverName); // remove server key and its values
         editor.putStringSet(SERVER_LIST, serverList); // write update server list
 
         // if the server being removed is the current server, set current selected to null
-        if (mPrefs.getString(SELECTED_SERVER, "").equals(serverName))
+        if (getSelectedServer().equals(serverName))
             editor.putString(SELECTED_SERVER, null);
 
         return editor.commit();

@@ -7,6 +7,6 @@ import java.util.Map;
  * <p>
  * Created by bryan on 2/23/18.
  */
-public interface FirebaseDataListener {
-    void onDataReceived(Map<String, Object> data);
+public interface FirestoreUIListener {
+    void onDataReceived(String data);
 }

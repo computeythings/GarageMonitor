@@ -2,44 +2,24 @@ package computeythings.garagemonitor.services;
 
 import android.app.IntentService;
 import android.content.Intent;
-import android.media.RingtoneManager;
-import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
 
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.EventListener;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException;
-import com.google.firebase.firestore.ListenerRegistration;
-
 import java.util.HashMap;
-import java.util.Map;
 
-import computeythings.garagemonitor.R;
-import computeythings.garagemonitor.interfaces.FirebaseDataListener;
+import computeythings.garagemonitor.interfaces.FirestoreUIListener;
 import computeythings.garagemonitor.preferences.ServerPreferences;
 
 public class FirestoreListenerService extends IntentService {
     private static final String TAG = "FirestoreListener";
-    private static final String SERVER_COLLECTION = "servers";
-    private static final String NOTIFICATION_CHANNEL =
-            "computeythings.garagemonitor.services.FirestoreListenerService.NOTIFICATIONS";
-    public static final String STATE = "STATE";
     public static final String FOLLOW_SERVER =
             "computeythings.garagemonitor.services.FirestoreListenerService.FOLLOW_SERVER";
     public static final String UNFOLLOW_SERVER =
             "computeythings.garagemonitor.services.FirestoreListenerService.UNFOLLOW_SERVER";
-
-    private FirebaseFirestore mDatabase;
-    private HashMap<FirebaseDataListener, String> mDataListeners;
-    private HashMap<String, ListenerRegistration> mSubscribed;
+    private HashMap<String, FirestoreListener> mDocumentListeners;
+    private HashMap<String, FirestoreUIListener> mListenerQueue;
     private ServiceBinder mBinder;
 
     public FirestoreListenerService() {
@@ -48,23 +28,20 @@ public class FirestoreListenerService extends IntentService {
 
     @Override
     public void onCreate() {
+        Log.d(TAG, "New Firestore listener service created");
         super.onCreate();
-        mDataListeners = new HashMap<>();
-        mSubscribed = new HashMap<>();
+        mDocumentListeners = new HashMap<>();
+        mListenerQueue = new HashMap<>();
         mBinder = new ServiceBinder();
-        mDatabase = FirebaseFirestore.getInstance();
 
         // subscribe to all known servers
         ServerPreferences prefs = new ServerPreferences(this);
         for (String server : prefs.getServerList()) {
             String refId = prefs.getServerInfo(server).get(ServerPreferences.SERVER_REFID);
             if (refId != null) {
-                subscribeTo(server, refId);
+                addServer(server, refId);
             }
         }
-
-
-        Log.d(TAG, "New Firestore listener service created");
     }
 
     @Override
@@ -95,92 +72,70 @@ public class FirestoreListenerService extends IntentService {
 
         switch (intent.getAction()) {
             case FOLLOW_SERVER:
-                // swap out server name with ref ID if it exists
-                if (mDataListeners.containsValue(server)) {
-                    for (FirebaseDataListener listener : mDataListeners.keySet()) {
-                        if (mDataListeners.get(listener).equals(server)) {
-                            mDataListeners.put(listener, refId);
-                            mBinder.refreshData(listener);
-                        }
-                    }
-                }
-                subscribeTo(server, refId);
+                addServer(server, refId);
                 break;
             case UNFOLLOW_SERVER:
-                unsubscribeFrom(refId);
+                removeServer(server, refId);
         }
     }
 
     /*
-        Listen for changes on a Firestore document and store the listener for later removal
+        Add a server reference to a Firestore listener.
+        Creates the listener if it does not already exist
      */
-    private void subscribeTo(final String server, final String refId) {
-        if (mSubscribed.containsKey(refId))
-            return; // don't subscribe to a document twice
-
-        final DocumentReference docRef = mDatabase.collection(SERVER_COLLECTION).document(refId);
-        ListenerRegistration subscription = docRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
-            boolean initDone = false;
-
-            @Override
-            public void onEvent(DocumentSnapshot documentSnapshot, FirebaseFirestoreException e) {
-                if (!initDone) {
-                    // disable initial query since it causes notifications on service start
-                    initDone = true;
-                    return;
-                }
-                if (e != null) {
-                    Log.w(TAG, "Failed to listen on " + refId);
-                    e.printStackTrace();
-                    return;
-                }
-
-                if (documentSnapshot != null && documentSnapshot.exists()) {
-                    Map<String, Object> data = documentSnapshot.getData();
-                    Log.d(TAG, "Received data: " + data + " from " + server);
-                    updateListener(refId, data);
-                    // if there is no active subscriber to the document ref, send a notification
-                    if (!mDataListeners.containsValue(refId)) {
-                        sendNotification(server, data.get(STATE).toString());
-                    }
-                } else {
-                    Log.d(TAG, "Received data: null from " + server);
-                }
-            }
-        });
-        mSubscribed.put(refId, subscription);
-    }
-
-    private void unsubscribeFrom(final String refId) {
-        if (!mSubscribed.containsKey(refId))
-            return; // obviously nothing to do if we're not already subscribed
-        mSubscribed.get(refId).remove(); // remove listener for snapshot changes
-        mSubscribed.remove(refId); // remove listener from list of subscribed
+    private void addServer(String server, String refId) {
+        if (!mDocumentListeners.containsKey(refId)) {
+            Log.i(TAG, "Adding server listener for " + refId);
+            mDocumentListeners.put(refId, new FirestoreListener(refId, this));
+        }
+        mDocumentListeners.get(refId).addServer(server);
+        // If this server has a listener queued, add it and remove from queue
+        if(mListenerQueue.containsKey(server))
+            mDocumentListeners.get(refId).addUIListener(mListenerQueue.remove(server));
     }
 
     /*
-        Update all listeners registered to the updated refId
+        Remove a server from a Firestore listener. If all servers are removed from a listener, the
+        document's onSnapshotListener will be removed and the listener removed from the service.
      */
-    private void updateListener(String refId, Map<String, Object> data) {
-        if (mDataListeners.containsValue(refId)) {
-            for (FirebaseDataListener listener : mDataListeners.keySet()) {
-                if (mDataListeners.get(listener).equals(refId))
-                    listener.onDataReceived(data);
-            }
-        }
+    private void removeServer(String server, String refId) {
+        FirestoreListener listener = mDocumentListeners.get(refId);
+        listener.removeServer(server);
+        if (listener.hasFollowers())
+            listener.unsubscribe();
+        mDocumentListeners.remove(refId);
     }
 
-    private void sendNotification(String server, String state) {
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this,
-                NOTIFICATION_CHANNEL)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle(server) // TODO: include server name
-                .setContentText("State changed to: " + state)
-                .setVibrate(new long[0])
-                .setPriority(NotificationCompat.PRIORITY_HIGH);
-        Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        builder.setSound(alarmSound);
-        NotificationManagerCompat.from(this).notify(0, builder.build());
+    /*
+        Add UI listener to be updated on document changes
+     */
+    private void subscribeListener(FirestoreUIListener uiListener, String ref) {
+        if(mDocumentListeners.containsKey(ref))
+            mDocumentListeners.get(ref).addUIListener(uiListener);
+        else
+            queueListener(uiListener, ref);
+    }
+
+    /*
+        If a listener is added with a server name it's because no document reference ID exists in
+        preferences. Add the listener to a queue which is queried upon each server added.
+     */
+    private void queueListener(FirestoreUIListener uiListener, String server) {
+        mListenerQueue.put(server, uiListener);
+    }
+
+    /*
+        Get latest data from Firestore server and send to UI client
+     */
+    private void refreshListener(FirestoreUIListener uiListener, String refId) {
+        mDocumentListeners.get(refId).refreshUI(uiListener);
+    }
+
+    /*
+        Remove a UI listener
+     */
+    private void unsubscribeListener(FirestoreUIListener uiListener, String refId) {
+        mDocumentListeners.get(refId).removeUIListener(uiListener);
     }
 
     /*
@@ -191,27 +146,20 @@ public class FirestoreListenerService extends IntentService {
             Adds listener with the ref ID as the value. If a ref ID does not exist, the server name
             should be used as it will be swapped out when one is available.
          */
-        public void addDataListener(String ref, FirebaseDataListener listener) {
-            mDataListeners.put(listener, ref);
+        public void addDataListener(FirestoreUIListener listener, String ref) {
+            subscribeListener(listener, ref);
         }
 
-        public void removeDataListener(FirebaseDataListener listener) {
-            mDataListeners.remove(listener);
+        public void removeDataListener(FirestoreUIListener listener, String refId) {
+            unsubscribeListener(listener, refId);
         }
 
-        public void refreshData(final FirebaseDataListener listener) {
-            mDatabase.collection(SERVER_COLLECTION).document(mDataListeners.get(listener)).get()
-                    .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
-                        @Override
-                        public void onSuccess(DocumentSnapshot documentSnapshot) {
-                            listener.onDataReceived(documentSnapshot.getData());
-                        }
-                    });
+        public void refreshData(final FirestoreUIListener listener, String refId) {
+            refreshListener(listener, refId);
         }
 
-        public void unsubscribe(FirebaseDataListener listener) {
-            String listenerRef = mDataListeners.get(listener);
-            unsubscribeFrom(listenerRef);
+        public void unsubscribe(FirestoreUIListener listener, String refId) {
+            unsubscribeListener(listener, refId);
         }
     }
 
@@ -220,8 +168,8 @@ public class FirestoreListenerService extends IntentService {
      */
     @Override
     public void onDestroy() {
-        for (String listener : mSubscribed.keySet()) {
-            mSubscribed.get(listener).remove();
+        for (FirestoreListener listener : mDocumentListeners.values()) {
+            listener.unsubscribe();
         }
         super.onDestroy();
     }
