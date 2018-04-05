@@ -192,17 +192,27 @@ public class AddServerDialog extends DialogFragment {
                         return;
                     }
 
-                    // If the key was changed, remove the key/value pair
-                    if(mEditKey != null && !serverName.equals(mEditKey))
-                        ((OnServerListChangeListener) getHost()).onServerDeleted(mEditKey);
-                    // store new server info in preferences
-                    mPrefs.addServer(serverName, serverAddress, serverApiKey,
-                            Integer.parseInt(serverPort), mCertURI);
+                    final OnServerListChangeListener host = (OnServerListChangeListener) getHost();
 
-                    // send callback to host activity that a server was added
-                    ((OnServerListChangeListener) getHost()).onServerModify(serverName);
+                    if(mEditKey == null && mPrefs.getServerList().contains(serverName)) {
+                        new AlertDialog.Builder(getContext())
+                                .setTitle("Server Name Error")
+                                .setMessage("A server with that name already exists!")
+                                .setIcon(android.R.drawable.ic_dialog_alert)
+                                .setNegativeButton(android.R.string.ok, null).show();
+                    } else {
+                        // If the key was changed, remove the key/value pair
+                        if (mEditKey != null && !serverName.equals(mEditKey))
+                            host.onServerDeleted(mEditKey);
+                        // store new server info in preferences
+                        mPrefs.addServer(serverName, serverAddress, serverApiKey,
+                                Integer.parseInt(serverPort), mCertURI);
 
-                    dismiss();
+                        // send callback to host activity that a server was added
+                        ((OnServerListChangeListener) getHost()).onServerModify(serverName);
+
+                        dismiss();
+                    }
                 }
             });
             Button neutralButton = self.getButton(Dialog.BUTTON_NEUTRAL);
