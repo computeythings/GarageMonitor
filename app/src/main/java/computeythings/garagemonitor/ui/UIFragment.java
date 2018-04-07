@@ -129,7 +129,7 @@ public class UIFragment extends Fragment
      */
     public void serverDeleted(String server) {
         if (server.equals(mPreferences.getSelectedServer())) {
-            // Stop listening on this doc ref
+            // stop listening on this doc ref
             mFirestoreService.unsubscribe(this, getCurrentRefId());
             unbindFromService();
             socketClose();
@@ -504,6 +504,8 @@ public class UIFragment extends Fragment
 
     private void unbindFromService() {
         if (mServiceBound) {
+            // no more need to refresh
+            mSwipeRefreshLayout.setRefreshing(false);
             mFirestoreService.removeDataListener(this, getCurrentRefId());
             mContext.unbindService(mServiceConnection);
             mServiceConnection = null;
