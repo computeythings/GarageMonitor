@@ -128,14 +128,16 @@ public class FirestoreListenerService extends IntentService {
         Get latest data from Firestore server and send to UI client
      */
     private void refreshListener(FirestoreUIListener uiListener, String refId) {
-        mDocumentListeners.get(refId).refreshUI(uiListener);
+        if(mDocumentListeners.containsKey(refId))
+            mDocumentListeners.get(refId).refreshUI(uiListener);
     }
 
     /*
         Remove a UI listener
      */
     private void unsubscribeListener(FirestoreUIListener uiListener, String refId) {
-        mDocumentListeners.get(refId).removeUIListener(uiListener);
+        if(mDocumentListeners.containsKey(refId))
+            mDocumentListeners.get(refId).removeUIListener(uiListener);
     }
 
     /*
