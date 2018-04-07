@@ -20,7 +20,6 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
 import computeythings.garagemonitor.interfaces.SocketCreatedListener;
-import computeythings.garagemonitor.ui.SocketConnector;
 
 
 /**
@@ -64,7 +63,7 @@ public class AsyncSocketCreator extends AsyncTask<String, String, SSLSocket> {
             // the socket should only send out one string and it will be the Document Ref ID
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             String data = null;
-            while(data == null || data.equals("")) {
+            while (data == null || data.equals("")) {
                 data = in.readLine();
             }
             publishProgress(data); // update running app with ref ID
@@ -73,7 +72,6 @@ public class AsyncSocketCreator extends AsyncTask<String, String, SSLSocket> {
             Log.e(TAG, "Error creating socket to " + server + " on socket " + port);
             e.printStackTrace();
         }
-
 
 
         try {
@@ -130,7 +128,7 @@ public class AsyncSocketCreator extends AsyncTask<String, String, SSLSocket> {
 
     @Override
     protected void onPostExecute(SSLSocket socket) {
-        if(mListener != null)
+        if (mListener != null)
             mListener.onSocketReady(socket, errorMsg);
     }
 }

@@ -1,7 +1,5 @@
 package computeythings.garagemonitor.interfaces;
 
-import java.util.Map;
-
 /**
  * Interface to listen for results when a subscribed server document is changed
  * <p>

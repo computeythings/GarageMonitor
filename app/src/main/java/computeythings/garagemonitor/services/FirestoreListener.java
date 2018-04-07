@@ -97,7 +97,7 @@ public class FirestoreListener {
         Update all listeners registered to the updated refId
      */
     private void updateListener(FirestoreUIListener listener, DocumentSnapshot documentSnapshot) {
-        if(documentSnapshot.getData() == null) {
+        if (documentSnapshot.getData() == null) {
             Log.e(TAG, "Could not get data from database document.");
             listener.onDataReceived(null);
             return;
@@ -142,7 +142,7 @@ public class FirestoreListener {
         Removes a UI listener from a document. That UI will no longer be updated on doc changes
      */
     public void removeUIListener(FirestoreUIListener listener) {
-        if(this.listeners.contains(listener))
+        if (this.listeners.contains(listener))
             this.listeners.remove(listener);
     }
 
@@ -158,7 +158,7 @@ public class FirestoreListener {
         Removes a server
      */
     public void removeServer(String follower) {
-        if(this.followers.contains(follower))
+        if (this.followers.contains(follower))
             this.followers.remove(follower);
     }
 

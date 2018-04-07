@@ -50,7 +50,7 @@ public class UIActivity extends AppCompatActivity implements AddServerDialog.OnS
      */
     @Override
     public void onServerModify(String server) {
-        if(server == null) {
+        if (server == null) {
             Log.e(TAG, "Attempting to add null server");
             return;
         }
@@ -60,7 +60,7 @@ public class UIActivity extends AppCompatActivity implements AddServerDialog.OnS
 
     @Override
     public void onServerDeleted(String server) {
-        if(server == null) {
+        if (server == null) {
             Log.e(TAG, "Attempting to delete null server");
             return;
         }

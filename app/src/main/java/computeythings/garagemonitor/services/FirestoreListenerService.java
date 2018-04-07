@@ -90,7 +90,7 @@ public class FirestoreListenerService extends IntentService {
         }
         mDocumentListeners.get(refId).addServer(server);
         // If this server has a listener queued, add it and remove from queue
-        if(mListenerQueue.containsKey(server))
+        if (mListenerQueue.containsKey(server))
             mDocumentListeners.get(refId).addUIListener(mListenerQueue.remove(server));
     }
 
@@ -110,7 +110,7 @@ public class FirestoreListenerService extends IntentService {
         Add UI listener to be updated on document changes
      */
     private void subscribeListener(FirestoreUIListener uiListener, String ref) {
-        if(mDocumentListeners.containsKey(ref))
+        if (mDocumentListeners.containsKey(ref))
             mDocumentListeners.get(ref).addUIListener(uiListener);
         else
             queueListener(uiListener, ref);
@@ -128,7 +128,7 @@ public class FirestoreListenerService extends IntentService {
         Get latest data from Firestore server and send to UI client
      */
     private void refreshListener(FirestoreUIListener uiListener, String refId) {
-        if(mDocumentListeners.containsKey(refId))
+        if (mDocumentListeners.containsKey(refId))
             mDocumentListeners.get(refId).refreshUI(uiListener);
     }
 
@@ -136,7 +136,7 @@ public class FirestoreListenerService extends IntentService {
         Remove a UI listener
      */
     private void unsubscribeListener(FirestoreUIListener uiListener, String refId) {
-        if(mDocumentListeners.containsKey(refId))
+        if (mDocumentListeners.containsKey(refId))
             mDocumentListeners.get(refId).removeUIListener(uiListener);
     }
 

@@ -68,7 +68,7 @@ public class ServerPreferences {
         JSONObject json;
         try {
             json = new JSONObject(mPrefs.getString(serverName, ""));
-            if(json.has(SERVER_REFID) && json.getString(SERVER_REFID).equals(refId))
+            if (json.has(SERVER_REFID) && json.getString(SERVER_REFID).equals(refId))
                 return true; // no need to do anymore since the same ID is already stored.
             json.put(SERVER_REFID, refId);
         } catch (JSONException e) {

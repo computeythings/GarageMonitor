@@ -145,7 +145,7 @@ public class UIFragment extends Fragment
         if (mPreferences.getSelectedServer() == null) {
             mPreferences.setSelectedServer(server);
             serverConnect();
-        } else if(mPreferences.getSelectedServer().equals(server))
+        } else if (mPreferences.getSelectedServer().equals(server))
             serverConnect();
         updateServerList();
     }

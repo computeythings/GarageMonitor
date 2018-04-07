@@ -10,5 +10,6 @@ import javax.net.ssl.SSLSocket;
 
 public interface SocketCreatedListener {
     void onSocketReady(SSLSocket socket, String errorMsg);
+
     void onSocketData(String message);
 }

@@ -194,7 +194,7 @@ public class AddServerDialog extends DialogFragment {
 
                     final OnServerListChangeListener host = (OnServerListChangeListener) getHost();
 
-                    if(mEditKey == null && mPrefs.getServerList().contains(serverName)) {
+                    if (mEditKey == null && mPrefs.getServerList().contains(serverName)) {
                         new AlertDialog.Builder(getContext())
                                 .setTitle("Server Name Error")
                                 .setMessage("A server with that name already exists!")
