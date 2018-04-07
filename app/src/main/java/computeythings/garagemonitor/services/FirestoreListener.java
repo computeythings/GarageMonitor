@@ -97,6 +97,11 @@ public class FirestoreListener {
         Update all listeners registered to the updated refId
      */
     private void updateListener(FirestoreUIListener listener, DocumentSnapshot documentSnapshot) {
+        if(documentSnapshot.getData() == null) {
+            Log.e(TAG, "Could not get data from database document.");
+            listener.onDataReceived(null);
+            return;
+        }
         listener.onDataReceived(documentSnapshot.getData().get(STATE).toString());
     }
 
