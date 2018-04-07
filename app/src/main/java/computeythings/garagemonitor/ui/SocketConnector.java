@@ -10,7 +10,6 @@ import android.widget.Toast;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -31,6 +30,7 @@ import javax.net.ssl.TrustManagerFactory;
 
 import computeythings.garagemonitor.async.AsyncSocketClose;
 import computeythings.garagemonitor.async.AsyncSocketCreator;
+import computeythings.garagemonitor.async.AsyncSocketWriter;
 import computeythings.garagemonitor.interfaces.SocketCreatedListener;
 import computeythings.garagemonitor.interfaces.SocketResultListener;
 import computeythings.garagemonitor.preferences.ServerPreferences;
@@ -179,7 +179,7 @@ public class SocketConnector implements SocketCreatedListener {
                 else {
                     onSocketReady(socket, null);
                 }
-            // If we couldn't connect to the socket, do a continuous reconnect attempt
+                // If we couldn't connect to the socket, do a continuous reconnect attempt
             } catch (InterruptedException | ExecutionException | TimeoutException e) {
                 e.printStackTrace();
                 socketReconnect(UI_REQUEST_DELAY);
@@ -190,31 +190,14 @@ public class SocketConnector implements SocketCreatedListener {
             }
         }
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                boolean success;
-                try {
-                    OutputStream out = socket.getOutputStream();
-                    out.write(message.getBytes());
-                    out.close(); // Flush and close
-                    success = true;
-                } catch (IOException | NullPointerException e) {
-                    Log.w(TAG, "Error writing message " + message);
-                    // If socket is closed, attempt to reopen and resend message.
-                    success = false;
-                }
-                if (uiListener != null)
-                    uiListener.onSocketResult(success);
-            }
-        }).start();
+        new AsyncSocketWriter(message, socket, uiListener).start();
     }
 
     /*
         Attempts to gracefully close the SSLSocket connection.
      */
     void socketClose() {
-        if(sender != null)
+        if (sender != null)
             sender.removeCallbacksAndMessages(null); // stop trying to reconnect
 
         if (isDisconnected())
