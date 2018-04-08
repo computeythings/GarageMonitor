@@ -2,7 +2,10 @@ package computeythings.garagemonitor.preferences;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.util.Log;
+
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -33,7 +36,7 @@ public class ServerPreferences {
     private final SharedPreferences mPrefs;
 
     public ServerPreferences(Context context) {
-        mPrefs = context.getSharedPreferences(PREFERENCES_NAME, 0);
+        mPrefs = PreferenceManager.getDefaultSharedPreferences(context);
     }
 
     /*
@@ -70,6 +73,8 @@ public class ServerPreferences {
             json = new JSONObject(mPrefs.getString(serverName, ""));
             if (json.has(SERVER_REFID) && json.getString(SERVER_REFID).equals(refId))
                 return true; // no need to do anymore since the same ID is already stored.
+            // subscribe to the FCM topic to received updates
+            FirebaseMessaging.getInstance().subscribeToTopic(refId);
             json.put(SERVER_REFID, refId);
         } catch (JSONException e) {
             Log.d(TAG, "Could not parse info for " + serverName);
