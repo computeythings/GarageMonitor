@@ -3,6 +3,7 @@ package computeythings.garagemonitor.services;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
 
 import computeythings.garagemonitor.preferences.ServerPreferences;
 
@@ -15,16 +16,14 @@ import computeythings.garagemonitor.preferences.ServerPreferences;
 
 public class OnBoot extends BroadcastReceiver {
     private static final String TAG = "BOOT_SERVICE";
-
     @Override
     public void onReceive(Context context, Intent intent) {
         if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction()) ||
                 Intent.ACTION_REBOOT.equals(intent.getAction()))
             return;
 
-        ServerPreferences prefs = new ServerPreferences(context);
-
-        if (prefs.getSelectedServer() != null)
-            context.startService(new Intent(context, FirestoreListenerService.class));
+        Log.d(TAG, "On-boot broadcast received.");
+        context.startService(new Intent(context, FirebaseIDService.class));
+        context.startService(new Intent(context, FCMService.class));
     }
 }
