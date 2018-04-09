@@ -2,10 +2,12 @@ package computeythings.garagemonitor.services;
 
 import android.app.ActivityManager;
 import android.content.ComponentName;
+import android.content.Intent;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.google.firebase.messaging.FirebaseMessagingService;
@@ -21,8 +23,10 @@ import computeythings.garagemonitor.preferences.ServerPreferences;
 public class FCMService extends FirebaseMessagingService {
     private static final String TAG = "FCMService";
     private static final String NOTIFICATION_CHANNEL =
-            "computeythings.garagemonitor.services.FirestoreListener.NOTIFICATIONS";
+            "computeythings.garagemonitor.services.FCMService.NOTIFICATIONS";
     private static final String STATE = "STATE";
+    public static final String SERVER_UPDATE_RECEIVED =
+            "computeythings.garagemonitor.services.FCMService.SERVER_UPDATE";
 
     /*
         Will be run any time a topic is updated with the server's state
@@ -40,6 +44,7 @@ public class FCMService extends FirebaseMessagingService {
             ServerPreferences prefs = new ServerPreferences(this);
             Log.d(TAG, "Message data payload: " + remoteMessage.getData());
             Set<String> subs = prefs.getServersFromRef(sender);
+
             // update each subscribed server
             for(String subscribedServer : subs) {
                 // update stored values of server
@@ -48,6 +53,13 @@ public class FCMService extends FirebaseMessagingService {
                     sendNotification(subscribedServer, data.get(STATE));
                 }
             }
+
+            // broadcast that an update was received on this refID
+            LocalBroadcastManager broadcaster = LocalBroadcastManager.getInstance(this);
+            Intent update = new Intent();
+            update.setAction(SERVER_UPDATE_RECEIVED);
+            update.putExtra(ServerPreferences.SERVER_REFID, sender);
+            broadcaster.sendBroadcast(update);
         }
     }
 

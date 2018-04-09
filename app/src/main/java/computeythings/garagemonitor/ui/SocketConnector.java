@@ -234,6 +234,7 @@ public class SocketConnector implements SocketCreatedListener {
         }
         // we don't want to hold the queue too long. Clear whether the socket connected or not.
         queue = null;
+        uiListener.onSocketResult(true);
     }
 
     /*

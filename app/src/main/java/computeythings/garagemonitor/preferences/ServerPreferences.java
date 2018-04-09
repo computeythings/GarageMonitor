@@ -32,7 +32,8 @@ public class ServerPreferences {
     public static final String SERVER_API_KEY = "API_KEY";
     public static final String SERVER_PORT = "PORT";
     public static final String SERVER_CERT = "CERT_LOCATION";
-    public static final String SERVER_REFID = "SERVER_REFID";
+    public static final String SERVER_REFID = "REFID";
+    public static final String SERVER_NOTIFICATIONS = "NOTIFICATIONS";
     public static final String LAST_STATE = "LAST_STATE";
     public static final String LAST_UPDATED = "LAST_UPDATED";
 
@@ -78,8 +79,10 @@ public class ServerPreferences {
         JSONObject serverInfo;
         try {
             serverInfo = new JSONObject(prefs.getString(server, ""));
-            serverInfo.put(LAST_STATE, state);
-            serverInfo.put(LAST_UPDATED, updateTime);
+            if(!serverInfo.has(LAST_STATE) || !serverInfo.getString(LAST_STATE).equals(state)) {
+                serverInfo.put(LAST_STATE, state);
+                serverInfo.put(LAST_UPDATED, updateTime);
+            }
         } catch (JSONException e) {
             Log.e(TAG, "Received bad JSON info for " + server);
             return false;

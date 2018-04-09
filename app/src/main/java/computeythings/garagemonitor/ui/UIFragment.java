@@ -1,19 +1,19 @@
 package computeythings.garagemonitor.ui;
 
 import android.app.AlertDialog;
-import android.content.ComponentName;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.ServiceConnection;
+import android.content.IntentFilter;
 import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -34,11 +34,9 @@ import java.util.HashMap;
 import java.util.Set;
 
 import computeythings.garagemonitor.R;
-import computeythings.garagemonitor.interfaces.FirestoreUIListener;
 import computeythings.garagemonitor.interfaces.SocketResultListener;
 import computeythings.garagemonitor.preferences.ServerPreferences;
-import computeythings.garagemonitor.services.FirestoreListenerService;
-import computeythings.garagemonitor.services.FirestoreListenerService.ServiceBinder;
+import computeythings.garagemonitor.services.FCMService;
 
 /**
  * Main UI Fragment responsible for server setup and user interaction. Main body of code.
@@ -47,8 +45,7 @@ import computeythings.garagemonitor.services.FirestoreListenerService.ServiceBin
  */
 
 public class UIFragment extends Fragment
-        implements NavigationView.OnNavigationItemSelectedListener, SocketResultListener,
-        FirestoreUIListener {
+        implements NavigationView.OnNavigationItemSelectedListener, SocketResultListener {
     private static final String TAG = "UI_Fragment";
     private static final String STATE_OPEN = "OPEN";
     private static final String STATE_OPENING = "OPENING";
@@ -67,17 +64,14 @@ public class UIFragment extends Fragment
     private Menu mSettingsMenu;
 
     private SocketConnector mServer;
-    private FirestoreServiceConnection mServiceConnection;
-    private ServiceBinder mFirestoreService;
-    private boolean mServiceBound;
-
     private ServerPreferences mPreferences;
+    private BroadcastReceiver mBroadcastReceiver;
 
     // Socket interactions //
     /*
         Creates a new SocketConnector from the currently selected server information
      */
-    private void serverConnect() {
+    private void socketConnect() {
         if (mPreferences.getSelectedServer() == null)
             return; // quit if there is no valid server to connect to
 
@@ -87,8 +81,9 @@ public class UIFragment extends Fragment
             // create and bind a socket based on currently selected server
             mServer = SocketConnector.fromInfo(mPreferences.getServerInfo(currentServer), mContext,
                     this);
+            mSavedState = mPreferences.getServerInfo(mPreferences.getSelectedServer())
+                    .get(ServerPreferences.LAST_STATE);
         }
-        bindToService();
     }
 
     public boolean socketWrite(String message) {
@@ -120,8 +115,11 @@ public class UIFragment extends Fragment
         if (!success) {
             Toast.makeText(mContext, "Could not connect to server", Toast.LENGTH_SHORT).show();
             mSavedState = STATE_DISCONNECTED;
-            refreshDrawable();
+        } else {
+            mSavedState = mPreferences.getServerInfo(mPreferences.getSelectedServer())
+                    .get(ServerPreferences.LAST_STATE);
         }
+        refreshDrawable();
     }
 
     /*
@@ -129,9 +127,6 @@ public class UIFragment extends Fragment
      */
     public void serverDeleted(String server) {
         if (server.equals(mPreferences.getSelectedServer())) {
-            // stop listening on this doc ref
-            mFirestoreService.unsubscribe(this, getCurrentRefId());
-            unbindFromService();
             socketClose();
             refreshDrawable();
         }
@@ -144,9 +139,9 @@ public class UIFragment extends Fragment
     public void serverModified(String server) {
         if (mPreferences.getSelectedServer() == null) {
             mPreferences.setSelectedServer(server);
-            serverConnect();
+            socketConnect();
         } else if (mPreferences.getSelectedServer().equals(server))
-            serverConnect();
+            socketConnect();
         updateServerList();
     }
 
@@ -219,8 +214,7 @@ public class UIFragment extends Fragment
     }
 
     private void refreshState() {
-        if (mServiceBound)
-            mFirestoreService.refreshData(UIFragment.this, getCurrentRefId());
+        // TODO: pull from firestore db
     }
 
     /*
@@ -333,15 +327,14 @@ public class UIFragment extends Fragment
                 mPreferences.setSelectedServer(selected);
                 updateServerList();
                 // start new socket connection
-                serverConnect();
+                socketConnect();
                 // kill any existing server connections if they are available
             } else if (!currentServer.equals(selected)) {
-                unbindFromService();
                 socketClose();
                 mPreferences.setSelectedServer(selected);
                 updateServerList();
                 // start new socket connection
-                serverConnect();
+                socketConnect();
             }
             // don't close the drawer if an invalid option was selected
         } else {
@@ -357,6 +350,9 @@ public class UIFragment extends Fragment
     @Override
     public void onAttach(Context context) {
         mContext = context;
+        mBroadcastReceiver = new MessageReceiver();
+        LocalBroadcastManager.getInstance(mContext).registerReceiver(mBroadcastReceiver,
+                new IntentFilter(FCMService.SERVER_UPDATE_RECEIVED));
         super.onAttach(context);
     }
 
@@ -437,7 +433,7 @@ public class UIFragment extends Fragment
     @Override
     public void onResume() {
         super.onResume();
-        serverConnect();
+        socketConnect();
     }
 
     @Override
@@ -448,7 +444,8 @@ public class UIFragment extends Fragment
 
     @Override
     public void onDetach() {
-        unbindFromService();
+        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(mBroadcastReceiver);
+        mBroadcastReceiver = null;
         super.onDetach();
     }
 
@@ -458,79 +455,22 @@ public class UIFragment extends Fragment
         super.onDestroy();
     }
 
-    // Service Connection //
-    /*
-        Creates a service to bind to a TCPSocketService on which AsyncTasks are run
-     */
-    private class FirestoreServiceConnection implements ServiceConnection {
-
-        // Called when the connection with the service is established
-        @Override
-        public void onServiceConnected(ComponentName className, IBinder service) {
-            if (mPreferences.getSelectedServer() == null)
-                return;
-            // because we have bound to an explicit service that is running in our own process,
-            // we can cast its IBinder to a concrete class and directly access it.
-            mFirestoreService = (ServiceBinder) service;
-            Log.i(TAG, "Connected to FirestoreService");
-            mServiceBound = true;
-
-            HashMap<String, String> currentServer = mPreferences
-                    .getServerInfo(mPreferences.getSelectedServer());
-            String refId = currentServer.get(ServerPreferences.SERVER_REFID);
-            if (refId != null) {
-                mFirestoreService.addDataListener(UIFragment.this, refId);
-            } else {
-                mFirestoreService.addDataListener(UIFragment.this,
-                        mPreferences.getSelectedServer());
-            }
-        }
-
-        // Called when the connection with the service disconnects unexpectedly
-        @Override
-        public void onServiceDisconnected(ComponentName className) {
-            Log.i(TAG, "Disconnected from FirestoreService");
-            mServiceBound = false;
-        }
-    }
-
-    private void bindToService() {
-        if (!mServiceBound) {
-            mServiceConnection = new FirestoreServiceConnection();
-            mContext.bindService(new Intent(mContext, FirestoreListenerService.class),
-                    mServiceConnection, Context.BIND_AUTO_CREATE);
-        }
-    }
-
-    private void unbindFromService() {
-        if (mServiceBound) {
-            // no more need to refresh
-            mSwipeRefreshLayout.setRefreshing(false);
-            mFirestoreService.removeDataListener(this, getCurrentRefId());
-            mContext.unbindService(mServiceConnection);
-            mServiceConnection = null;
-            mFirestoreService = null;
-            mServiceBound = false;
-        }
-    }
-
     private String getCurrentRefId() {
         return mPreferences.getServerInfo(mPreferences.getSelectedServer())
                 .get(ServerPreferences.SERVER_REFID);
     }
 
     /*
-        Receives data whenever the subscribed document is changed
+        Broadcast receiver to accept data sent via FCM
      */
-    @Override
-    public void onDataReceived(String data) {
-        mSwipeRefreshLayout.setRefreshing(false);
-        if (data == null) {
-            Toast.makeText(mContext, "Could establish connection to server socket",
-                    Toast.LENGTH_LONG).show();
-            return;
+    private class MessageReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (getCurrentRefId().equals(intent.getStringExtra(ServerPreferences.SERVER_REFID))) {
+                mSavedState = mPreferences.getServerInfo(mPreferences.getSelectedServer())
+                        .get(ServerPreferences.LAST_STATE);
+            }
+            refreshDrawable();
         }
-        mSavedState = data;
-        refreshDrawable();
     }
 }
