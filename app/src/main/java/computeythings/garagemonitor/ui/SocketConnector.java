@@ -1,7 +1,6 @@
 package computeythings.garagemonitor.ui;
 
 import android.content.Context;
-import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Handler;
@@ -34,7 +33,6 @@ import computeythings.garagemonitor.async.AsyncSocketWriter;
 import computeythings.garagemonitor.interfaces.SocketCreatedListener;
 import computeythings.garagemonitor.interfaces.SocketResultListener;
 import computeythings.garagemonitor.preferences.ServerPreferences;
-import computeythings.garagemonitor.services.FirestoreListenerService;
 
 /**
  * Representation and interface for SSLSocket connections
@@ -248,12 +246,5 @@ public class SocketConnector implements SocketCreatedListener {
             return;
         // save the reference ID to app preferences
         new ServerPreferences(context).setServerRefId(name, message);
-
-        // this should be handled by our intent service and subscribe to the document
-        Intent updateRefIdIntent = new Intent(context, FirestoreListenerService.class);
-        updateRefIdIntent.setAction(FirestoreListenerService.FOLLOW_SERVER);
-        updateRefIdIntent.putExtra(ServerPreferences.SERVER_NAME, name);
-        updateRefIdIntent.putExtra(ServerPreferences.SERVER_REFID, message);
-        context.startService(updateRefIdIntent);
     }
 }
