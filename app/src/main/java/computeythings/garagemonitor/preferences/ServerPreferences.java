@@ -23,9 +23,11 @@ import java.util.Set;
 
 public class ServerPreferences {
     private static final String TAG = "SERVER_PREFS";
-    private static final String PREFERENCES_NAME = "computeythings.garagemonitor.PREFERENCES";
-    private static final String SELECTED_SERVER = "SELECTED_SERVER";
+    private static final String PREFERENCES = "computeythings.garagemonitor.PREFERENCES";
+    private static final String SERVERS = ".SERVERS";
+    private static final String REFIDS = ".REFIDS";
     private static final String SERVER_LIST = "SERVER_LIST";
+    private static final String SELECTED_SERVER = "SELECTED_SERVER";
     public static final String SERVER_NAME = "NAME";
     public static final String SERVER_ADDRESS = "ADDRESS";
     public static final String SERVER_API_KEY = "API_KEY";
@@ -33,10 +35,10 @@ public class ServerPreferences {
     public static final String SERVER_CERT = "CERT_LOCATION";
     public static final String SERVER_REFID = "SERVER_REFID";
 
-    private final SharedPreferences mPrefs;
+    private Context mContext;
 
     public ServerPreferences(Context context) {
-        mPrefs = PreferenceManager.getDefaultSharedPreferences(context);
+        mContext = context;
     }
 
     /*
@@ -44,6 +46,8 @@ public class ServerPreferences {
      */
     public boolean addServer(String name, String address, String apikey, int port,
                              String certLocation) {
+        SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + SERVERS,
+                Context.MODE_PRIVATE);
         JSONObject json = new JSONObject();
         try {
             json.put(SERVER_NAME, name);
@@ -61,46 +65,63 @@ public class ServerPreferences {
         serverList.add(name); // add this server to the known list of servers
 
         // write new values to preferences
-        SharedPreferences.Editor editor = mPrefs.edit();
+        SharedPreferences.Editor editor = prefs.edit();
         editor.putString(name, json.toString());
         editor.putStringSet(SERVER_LIST, serverList);
         return editor.commit();
     }
 
-    public boolean setServerRefId(String serverName, String refId) {
+    public boolean setServerRefId(String server, String refID) {
+        SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + SERVERS,
+                Context.MODE_PRIVATE);
         JSONObject json;
         try {
-            json = new JSONObject(mPrefs.getString(serverName, ""));
-            if (json.has(SERVER_REFID) && json.getString(SERVER_REFID).equals(refId))
+            json = new JSONObject(prefs.getString(server, ""));
+            if (json.has(SERVER_REFID) && json.getString(SERVER_REFID).equals(refID))
                 return true; // no need to do anymore since the same ID is already stored.
             // subscribe to the FCM topic to received updates
-            FirebaseMessaging.getInstance().subscribeToTopic(refId);
-            json.put(SERVER_REFID, refId);
+            FirebaseMessaging.getInstance().subscribeToTopic(refID);
+            json.put(SERVER_REFID, refID);
         } catch (JSONException e) {
-            Log.d(TAG, "Could not parse info for " + serverName);
+            Log.d(TAG, "Could not parse info for " + server);
             e.printStackTrace();
             return false;
         }
-        SharedPreferences.Editor editor = mPrefs.edit();
-        editor.putString(serverName, json.toString());
-        return editor.commit();
+        // add server to the subscribed servers under refID in shared prefs
+        SharedPreferences refPrefs = mContext.getSharedPreferences(PREFERENCES + REFIDS,
+                Context.MODE_PRIVATE);
+        SharedPreferences.Editor refEditor = refPrefs.edit();
+        Set<String> subs = refPrefs.getStringSet(refID, new HashSet<String>());
+        subs.add(server);
+        refEditor.putStringSet(refID, subs);
+
+        // save refID to server properties
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString(server, json.toString());
+        return editor.commit() && refEditor.commit();
     }
 
     public String getSelectedServer() {
-        return mPrefs.getString(SELECTED_SERVER, null);
+        SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + SERVERS,
+                Context.MODE_PRIVATE);
+        return prefs.getString(SELECTED_SERVER, null);
     }
 
     public Set<String> getServerList() {
-        return mPrefs.getStringSet(SERVER_LIST, new HashSet<String>());
+        SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + SERVERS,
+                Context.MODE_PRIVATE);
+        return prefs.getStringSet(SERVER_LIST, new HashSet<String>());
     }
 
     /*
         Gets server info stored as JSON and converts it to a HashMap
      */
     public HashMap<String, String> getServerInfo(String serverName) {
+        SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + SERVERS,
+                Context.MODE_PRIVATE);
         HashMap<String, String> serverList = new HashMap<>();
         try {
-            JSONObject serverInfo = new JSONObject(mPrefs.getString(serverName, ""));
+            JSONObject serverInfo = new JSONObject(prefs.getString(serverName, ""));
             Iterator<String> it = serverInfo.keys();
             String key;
             while (it.hasNext()) {
@@ -115,19 +136,23 @@ public class ServerPreferences {
     }
 
     public boolean setSelectedServer(String serverName) {
-        SharedPreferences.Editor editor = mPrefs.edit();
+        SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + SERVERS,
+                Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
         editor.putString(SELECTED_SERVER, serverName);
         return editor.commit();
     }
 
     public boolean removeServer(String serverName) {
+        SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + SERVERS,
+                Context.MODE_PRIVATE);
         Set<String> serverList = getServerList();
 
         if (!serverList.contains(serverName))
             return true; // return true if the list doesn't already contain the server
 
         serverList.remove(serverName); // remove server from server list
-        SharedPreferences.Editor editor = mPrefs.edit();
+        SharedPreferences.Editor editor = prefs.edit();
         editor.remove(serverName); // remove server key and its values
         editor.putStringSet(SERVER_LIST, serverList); // write update server list
 
@@ -136,5 +161,11 @@ public class ServerPreferences {
             editor.putString(SELECTED_SERVER, null);
 
         return editor.commit();
+    }
+
+    public Set<String> getServersFromRef(String refID) {
+        SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + REFIDS,
+                Context.MODE_PRIVATE);
+        return prefs.getStringSet(refID, new HashSet<String>());
     }
 }
