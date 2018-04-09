@@ -2,7 +2,6 @@ package computeythings.garagemonitor.preferences;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
 import android.util.Log;
 
 import com.google.firebase.messaging.FirebaseMessaging;
@@ -87,6 +86,8 @@ public class ServerPreferences {
             e.printStackTrace();
             return false;
         }
+        // subscribe to the server topic to receive FCM updates
+        FirebaseMessaging.getInstance().subscribeToTopic(refID);
         // add server to the subscribed servers under refID in shared prefs
         SharedPreferences refPrefs = mContext.getSharedPreferences(PREFERENCES + REFIDS,
                 Context.MODE_PRIVATE);
