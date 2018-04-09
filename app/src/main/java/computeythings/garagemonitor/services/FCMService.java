@@ -37,11 +37,14 @@ public class FCMService extends FirebaseMessagingService {
         Map<String, String> data = remoteMessage.getData();
         Log.d(TAG, "Received message from " + sender);
         if(remoteMessage.getData().size() > 0) {
+            ServerPreferences prefs = new ServerPreferences(this);
             Log.d(TAG, "Message data payload: " + remoteMessage.getData());
-            if(!checkApp()) { // should only send notifications if app isn't running
-                Set<String> subs = new ServerPreferences(this).getServersFromRef(sender);
-                // send a notification for each subscribed server
-                for(String subscribedServer : subs) {
+            Set<String> subs = prefs.getServersFromRef(sender);
+            // update each subscribed server
+            for(String subscribedServer : subs) {
+                // update stored values of server
+                prefs.updateServer(subscribedServer, data.get(STATE), remoteMessage.getSentTime());
+                if(!checkApp()) { // should only send notifications if app isn't running
                     sendNotification(subscribedServer, data.get(STATE));
                 }
             }

@@ -33,6 +33,8 @@ public class ServerPreferences {
     public static final String SERVER_PORT = "PORT";
     public static final String SERVER_CERT = "CERT_LOCATION";
     public static final String SERVER_REFID = "SERVER_REFID";
+    public static final String LAST_STATE = "LAST_STATE";
+    public static final String LAST_UPDATED = "LAST_UPDATED";
 
     private Context mContext;
 
@@ -67,6 +69,24 @@ public class ServerPreferences {
         SharedPreferences.Editor editor = prefs.edit();
         editor.putString(name, json.toString());
         editor.putStringSet(SERVER_LIST, serverList);
+        return editor.commit();
+    }
+
+    public boolean updateServer(String server, String state, long updateTime) {
+        SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + SERVERS,
+                Context.MODE_PRIVATE);
+        JSONObject serverInfo;
+        try {
+            serverInfo = new JSONObject(prefs.getString(server, ""));
+            serverInfo.put(LAST_STATE, state);
+            serverInfo.put(LAST_UPDATED, updateTime);
+        } catch (JSONException e) {
+            Log.e(TAG, "Received bad JSON info for " + server);
+            return false;
+        }
+
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString(server, serverInfo.toString());
         return editor.commit();
     }
 
@@ -117,12 +137,12 @@ public class ServerPreferences {
     /*
         Gets server info stored as JSON and converts it to a HashMap
      */
-    public HashMap<String, String> getServerInfo(String serverName) {
+    public HashMap<String, String> getServerInfo(String server) {
         SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + SERVERS,
                 Context.MODE_PRIVATE);
         HashMap<String, String> serverList = new HashMap<>();
         try {
-            JSONObject serverInfo = new JSONObject(prefs.getString(serverName, ""));
+            JSONObject serverInfo = new JSONObject(prefs.getString(server, ""));
             Iterator<String> it = serverInfo.keys();
             String key;
             while (it.hasNext()) {
@@ -130,35 +150,35 @@ public class ServerPreferences {
                 serverList.put(key, serverInfo.getString(key));
             }
         } catch (JSONException e) {
-            Log.e(TAG, "Failed to get info for " + serverName);
+            Log.e(TAG, "Failed to get info for " + server);
             return null;
         }
         return serverList;
     }
 
-    public boolean setSelectedServer(String serverName) {
+    public boolean setSelectedServer(String server) {
         SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + SERVERS,
                 Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
-        editor.putString(SELECTED_SERVER, serverName);
+        editor.putString(SELECTED_SERVER, server);
         return editor.commit();
     }
 
-    public boolean removeServer(String serverName) {
+    public boolean removeServer(String server) {
         SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + SERVERS,
                 Context.MODE_PRIVATE);
         Set<String> serverList = getServerList();
 
-        if (!serverList.contains(serverName))
+        if (!serverList.contains(server))
             return true; // return true if the list doesn't already contain the server
 
-        serverList.remove(serverName); // remove server from server list
+        serverList.remove(server); // remove server from server list
         SharedPreferences.Editor editor = prefs.edit();
-        editor.remove(serverName); // remove server key and its values
+        editor.remove(server); // remove server key and its values
         editor.putStringSet(SERVER_LIST, serverList); // write update server list
 
         // if the server being removed is the current server, set current selected to null
-        if (getSelectedServer().equals(serverName))
+        if (getSelectedServer().equals(server))
             editor.putString(SELECTED_SERVER, null);
 
         return editor.commit();
