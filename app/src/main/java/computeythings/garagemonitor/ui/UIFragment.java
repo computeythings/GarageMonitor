@@ -205,7 +205,7 @@ public class UIFragment extends Fragment
             public void onClick(View view) {
                 if (mServer != null && !mServer.isDisconnected()) {
                     if (mPreferences.getSelectedServer() == null || !socketWrite(message)) {
-                        Toast.makeText(getContext(), "No server connected.",
+                        Toast.makeText(getContext(), "Could not connect to send message.",
                                 Toast.LENGTH_LONG).show();
                     }
                 }
@@ -214,7 +214,13 @@ public class UIFragment extends Fragment
     }
 
     private void refreshState() {
-        // TODO: pull from firestore db
+        if (mServer != null && !mServer.isDisconnected()) {
+            if (mPreferences.getSelectedServer() == null ||
+                    !socketWrite(SocketConnector.SEND_REFRESH)) {
+                Toast.makeText(getContext(), "Could not connect to send message.",
+                        Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     /*
@@ -348,22 +354,17 @@ public class UIFragment extends Fragment
 
     // Application Lifecycle //
     @Override
-    public void onAttach(Context context) {
-        mContext = context;
-        mBroadcastReceiver = new MessageReceiver();
-        LocalBroadcastManager.getInstance(mContext).registerReceiver(mBroadcastReceiver,
-                new IntentFilter(FCMService.SERVER_UPDATE_RECEIVED));
-        super.onAttach(context);
-    }
-
-    @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true); // enable fragment persist on configuration change
         setHasOptionsMenu(true); // enable settings menu
 
         // data receiver and preferences persist over multiple connections
+        mContext = getContext();
         mPreferences = new ServerPreferences(mContext);
+        mBroadcastReceiver = new MessageReceiver();
+        LocalBroadcastManager.getInstance(mContext).registerReceiver(mBroadcastReceiver,
+                new IntentFilter(FCMService.SERVER_UPDATE_RECEIVED));
     }
 
     /*
@@ -438,26 +439,16 @@ public class UIFragment extends Fragment
 
     @Override
     public void onPause() {
-        socketClose();
+        if(!getActivity().isChangingConfigurations())
+            socketClose();
         super.onPause();
-    }
-
-    @Override
-    public void onDetach() {
-        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(mBroadcastReceiver);
-        mBroadcastReceiver = null;
-        super.onDetach();
     }
 
     @Override
     public void onDestroy() {
         socketClose();
+        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(mBroadcastReceiver);
         super.onDestroy();
-    }
-
-    private String getCurrentRefId() {
-        return mPreferences.getServerInfo(mPreferences.getSelectedServer())
-                .get(ServerPreferences.SERVER_REFID);
     }
 
     /*
@@ -466,11 +457,17 @@ public class UIFragment extends Fragment
     private class MessageReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
+            mSwipeRefreshLayout.setRefreshing(false);
             if (getCurrentRefId().equals(intent.getStringExtra(ServerPreferences.SERVER_REFID))) {
                 mSavedState = mPreferences.getServerInfo(mPreferences.getSelectedServer())
                         .get(ServerPreferences.LAST_STATE);
             }
             refreshDrawable();
         }
+    }
+
+    private String getCurrentRefId() {
+        return mPreferences.getServerInfo(mPreferences.getSelectedServer())
+                .get(ServerPreferences.SERVER_REFID);
     }
 }
