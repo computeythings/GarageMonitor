@@ -57,6 +57,7 @@ public class ServerPreferences {
             json.put(SERVER_API_KEY, apikey);
             json.put(SERVER_PORT, port);
             json.put(SERVER_CERT, certLocation);
+            json.put(SERVER_NOTIFICATIONS, false);
         } catch (JSONException e) {
             Log.e(TAG, "Unexpected JSON error");
             e.printStackTrace();
