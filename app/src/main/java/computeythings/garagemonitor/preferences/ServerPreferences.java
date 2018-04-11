@@ -32,7 +32,7 @@ public class ServerPreferences {
     public static final String SERVER_PORT = "PORT";
     public static final String SERVER_CERT = "CERT_LOCATION";
     public static final String SERVER_REFID = "REFID";
-    public static final String SERVER_NOTIFICATIONS = "NOTIFICATIONS";
+    public static final String NOTIFICATIONS = "NOTIFICATIONS";
     public static final String LAST_STATE = "LAST_STATE";
     public static final String LAST_UPDATED = "LAST_UPDATED";
 
@@ -56,7 +56,7 @@ public class ServerPreferences {
             json.put(SERVER_API_KEY, apikey);
             json.put(SERVER_PORT, port);
             json.put(SERVER_CERT, certLocation);
-            json.put(SERVER_NOTIFICATIONS, false);
+            json.put(NOTIFICATIONS, false);
         } catch (JSONException e) {
             Log.e(TAG, "Unexpected JSON error");
             e.printStackTrace();
@@ -75,7 +75,7 @@ public class ServerPreferences {
         JSONObject serverInfo;
         try {
             serverInfo = new JSONObject(prefs.getString(server, ""));
-            if(!serverInfo.has(LAST_STATE) || !serverInfo.getString(LAST_STATE).equals(state)) {
+            if (!serverInfo.has(LAST_STATE) || !serverInfo.getString(LAST_STATE).equals(state)) {
                 serverInfo.put(LAST_STATE, state);
                 serverInfo.put(LAST_UPDATED, updateTime);
             }
@@ -98,7 +98,7 @@ public class ServerPreferences {
         JSONObject json;
         try {
             json = new JSONObject(prefs.getString(server, ""));
-            if (json.has(SERVER_NOTIFICATIONS) && json.getBoolean(SERVER_NOTIFICATIONS))
+            if (json.has(NOTIFICATIONS) && json.getBoolean(NOTIFICATIONS))
                 return true; // no need to do anymore since the same ID is already stored.
         } catch (JSONException e) {
             Log.d(TAG, "Could not parse info for " + server);
@@ -181,6 +181,21 @@ public class ServerPreferences {
 
         if (!prefs.contains(server))
             return true; // return true if the list doesn't already contain the server
+
+        // remove the server from its subscribed upstream document
+        String refID = getServerInfo(server).get(server);
+        if(refID != null) {
+            SharedPreferences refPrefs = mContext.getSharedPreferences(PREFERENCES + REFIDS,
+                    Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = refPrefs.edit();
+            Set<String> subs = refPrefs.getStringSet(refID, new HashSet<String>());
+            subs.remove(server);
+            if(subs.size() > 0)
+                editor.putStringSet(refID, subs);
+            else // if the document no longer has any subs, remove it from preferences
+                editor.remove(refID);
+            editor.apply();
+        }
 
         SharedPreferences.Editor editor = prefs.edit();
         editor.remove(server); // remove server key and its values
