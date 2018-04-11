@@ -39,7 +39,7 @@ public class UIActivity extends AppCompatActivity implements AddServerDialog.OnS
                 super.onBackPressed();
             }
         } catch (NullPointerException e) {
-            Log.d(TAG, "Attempting to use null view");
+            Log.e(TAG, "Attempting to use null view");
             e.printStackTrace();
             super.onBackPressed();
         }
