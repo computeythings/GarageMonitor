@@ -49,8 +49,9 @@ public class FCMService extends FirebaseMessagingService {
             for(String subscribedServer : subs) {
                 // update stored values of server
                 prefs.updateServer(subscribedServer, data.get(STATE), remoteMessage.getSentTime());
-                if(!checkApp()) { // should only send notifications if app isn't running
-                    sendNotification(subscribedServer, data.get(STATE));
+                // should only send notifications if app isn't active and notifications are enabled
+                if(!checkApp() && prefs.notificationsEnabled(sender)) {
+                    sendNotification(subscribedServer, data.get(STATE), remoteMessage.getSentTime());
                 }
             }
 
@@ -80,13 +81,14 @@ public class FCMService extends FirebaseMessagingService {
 
 
 
-    private void sendNotification(String server, String state) {
+    private void sendNotification(String server, String state, long sentTime) {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this,
                 NOTIFICATION_CHANNEL)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle(server)
                 .setContentText("State changed to: " + state)
                 .setVibrate(new long[0])
+                .setWhen(sentTime)
                 .setPriority(NotificationCompat.PRIORITY_HIGH);
         Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         builder.setSound(alarmSound);

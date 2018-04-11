@@ -94,6 +94,24 @@ public class ServerPreferences {
         return editor.commit();
     }
 
+    /*
+        Whether or not user should receive alerts from this server
+     */
+    public boolean notificationsEnabled(String server) {
+        SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + SERVERS,
+                Context.MODE_PRIVATE);
+        JSONObject json;
+        try {
+            json = new JSONObject(prefs.getString(server, ""));
+            if (json.has(SERVER_NOTIFICATIONS) && json.getBoolean(SERVER_NOTIFICATIONS))
+                return true; // no need to do anymore since the same ID is already stored.
+        } catch (JSONException e) {
+            Log.d(TAG, "Could not parse info for " + server);
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public boolean setServerRefId(String server, String refID) {
         SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + SERVERS,
                 Context.MODE_PRIVATE);
