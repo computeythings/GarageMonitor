@@ -19,11 +19,10 @@ public class FirebaseIDService extends FirebaseInstanceIdService {
 
         // subscribe to all known servers
         ServerPreferences prefs = new ServerPreferences(this);
-        for (String server : prefs.getServerList()) {
-            String refId = prefs.getServerInfo(server).get(ServerPreferences.SERVER_REFID);
-            if (refId != null) {
-                Log.e(TAG, "Subscribed to server at " + refId);
-                messaging.subscribeToTopic(refId);
+        for (String refID : prefs.getUpstreamServerRefs()) {
+            if (refID != null) {
+                Log.e(TAG, "Subscribed to server at " + refID);
+                messaging.subscribeToTopic(refID);
             }
         }
     }

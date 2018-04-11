@@ -25,7 +25,6 @@ public class ServerPreferences {
     private static final String PREFERENCES = "computeythings.garagemonitor.PREFERENCES";
     private static final String SERVERS = ".SERVERS";
     private static final String REFIDS = ".REFIDS";
-    private static final String SERVER_LIST = "SERVER_LIST";
     private static final String SELECTED_SERVER = "SELECTED_SERVER";
     public static final String SERVER_NAME = "NAME";
     public static final String SERVER_ADDRESS = "ADDRESS";
@@ -64,13 +63,9 @@ public class ServerPreferences {
             return false;
         }
 
-        Set<String> serverList = getServerList();
-        serverList.add(name); // add this server to the known list of servers
-
         // write new values to preferences
         SharedPreferences.Editor editor = prefs.edit();
         editor.putString(name, json.toString());
-        editor.putStringSet(SERVER_LIST, serverList);
         return editor.commit();
     }
 
@@ -150,12 +145,6 @@ public class ServerPreferences {
         return prefs.getString(SELECTED_SERVER, null);
     }
 
-    public Set<String> getServerList() {
-        SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + SERVERS,
-                Context.MODE_PRIVATE);
-        return prefs.getStringSet(SERVER_LIST, new HashSet<String>());
-    }
-
     /*
         Gets server info stored as JSON and converts it to a HashMap
      */
@@ -189,15 +178,12 @@ public class ServerPreferences {
     public boolean removeServer(String server) {
         SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + SERVERS,
                 Context.MODE_PRIVATE);
-        Set<String> serverList = getServerList();
 
-        if (!serverList.contains(server))
+        if (!prefs.contains(server))
             return true; // return true if the list doesn't already contain the server
 
-        serverList.remove(server); // remove server from server list
         SharedPreferences.Editor editor = prefs.edit();
         editor.remove(server); // remove server key and its values
-        editor.putStringSet(SERVER_LIST, serverList); // write update server list
 
         // if the server being removed is the current server, set current selected to null
         if (getSelectedServer().equals(server))
@@ -210,5 +196,17 @@ public class ServerPreferences {
         SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + REFIDS,
                 Context.MODE_PRIVATE);
         return prefs.getStringSet(refID, new HashSet<String>());
+    }
+
+    public Set<String> getServerList() {
+        SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + SERVERS,
+                Context.MODE_PRIVATE);
+        return new HashSet<>(prefs.getAll().keySet());
+    }
+
+    public Set<String> getUpstreamServerRefs() {
+        SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + REFIDS,
+                Context.MODE_PRIVATE);
+        return new HashSet<>(prefs.getAll().keySet());
     }
 }
