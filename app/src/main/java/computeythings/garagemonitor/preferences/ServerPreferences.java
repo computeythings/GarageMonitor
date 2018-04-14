@@ -23,9 +23,10 @@ import java.util.Set;
 public class ServerPreferences {
     private static final String TAG = "SERVER_PREFS";
     private static final String PREFERENCES = "computeythings.garagemonitor.PREFERENCES";
+    private static final String SELECTED_SERVER = ".SELECTED_SERVER";
     private static final String SERVERS = ".SERVERS";
     private static final String REFIDS = ".REFIDS";
-    private static final String SELECTED_SERVER = "SELECTED_SERVER";
+    private static final String SELECTED = "SELECTED";
     public static final String SERVER_NAME = "NAME";
     public static final String SERVER_ADDRESS = "ADDRESS";
     public static final String SERVER_API_KEY = "API_KEY";
@@ -140,9 +141,9 @@ public class ServerPreferences {
     }
 
     public String getSelectedServer() {
-        SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + SERVERS,
+        SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + SELECTED_SERVER,
                 Context.MODE_PRIVATE);
-        return prefs.getString(SELECTED_SERVER, null);
+        return prefs.getString(SELECTED, null);
     }
 
     /*
@@ -168,10 +169,10 @@ public class ServerPreferences {
     }
 
     public boolean setSelectedServer(String server) {
-        SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + SERVERS,
+        SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + SELECTED_SERVER,
                 Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
-        editor.putString(SELECTED_SERVER, server);
+        editor.putString(SELECTED, server);
         return editor.commit();
     }
 
@@ -184,13 +185,13 @@ public class ServerPreferences {
 
         // remove the server from its subscribed upstream document
         String refID = getServerInfo(server).get(server);
-        if(refID != null) {
+        if (refID != null) {
             SharedPreferences refPrefs = mContext.getSharedPreferences(PREFERENCES + REFIDS,
                     Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = refPrefs.edit();
             Set<String> subs = refPrefs.getStringSet(refID, new HashSet<String>());
             subs.remove(server);
-            if(subs.size() > 0)
+            if (subs.size() > 0)
                 editor.putStringSet(refID, subs);
             else // if the document no longer has any subs, remove it from preferences
                 editor.remove(refID);
@@ -202,7 +203,7 @@ public class ServerPreferences {
 
         // if the server being removed is the current server, set current selected to null
         if (getSelectedServer().equals(server))
-            editor.putString(SELECTED_SERVER, null);
+            setSelectedServer(null);
 
         return editor.commit();
     }

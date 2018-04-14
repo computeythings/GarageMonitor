@@ -1,5 +1,6 @@
 package computeythings.garagemonitor.async;
 
+import android.os.Handler;
 import android.util.Log;
 
 import java.io.IOException;
@@ -15,9 +16,11 @@ public class AsyncSocketWriter extends Thread {
     public AsyncSocketWriter(final String message, final SSLSocket socket,
                              final SocketResultListener uiListener) {
         super(new Runnable() {
+            Handler handler = new Handler();
+            boolean success;
+
             @Override
             public void run() {
-                boolean success;
                 try {
                     OutputStream out = socket.getOutputStream();
                     out.write(message.getBytes());
@@ -28,8 +31,14 @@ public class AsyncSocketWriter extends Thread {
                     // If socket is closed, attempt to reopen and resend message.
                     success = false;
                 }
-                if (uiListener != null)
-                    uiListener.onSocketResult(success);
+                if (uiListener != null) {
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            uiListener.onSocketResult(success);
+                        }
+                    });
+                }
             }
         });
     }
