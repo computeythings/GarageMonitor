@@ -32,7 +32,7 @@ public class AsyncSocketCreator extends AsyncTask<String, String, SSLSocket> {
     private static final String TAG = "SOCKET_CREATOR";
     private final SSLSocketFactory mSocketFactory;
     private final SocketCreatedListener mListener;
-    private String errorMsg;
+    private String dataExtra;
 
     public AsyncSocketCreator(SSLSocketFactory socketFactory,
                               SocketCreatedListener listener) {
@@ -66,7 +66,7 @@ public class AsyncSocketCreator extends AsyncTask<String, String, SSLSocket> {
             while (data == null || data.equals("")) {
                 data = in.readLine();
             }
-            publishProgress(data); // update running app with ref ID
+            dataExtra = data; // This should be the server refID
             in.close();
         } catch (IOException e) {
             Log.e(TAG, "Error creating socket to " + server + " on socket " + port);
@@ -76,7 +76,7 @@ public class AsyncSocketCreator extends AsyncTask<String, String, SSLSocket> {
 
         try {
             if (!verifyHost(server, socket)) { // this will only happen if the socket is null
-                errorMsg = "Could not reach server";
+                dataExtra = "Could not reach server";
             }
         } catch (SSLHandshakeException e) {
             e.printStackTrace();
@@ -88,7 +88,7 @@ public class AsyncSocketCreator extends AsyncTask<String, String, SSLSocket> {
                 Log.e(TAG, "Could not close socket.");
                 ex.printStackTrace();
             }
-            errorMsg = "Could not verify hostname.\nPossible Man-in-the-middle attack!";
+            dataExtra = "Could not verify hostname.\nPossible Man-in-the-middle attack!";
         }
 
         return socket;
@@ -122,13 +122,8 @@ public class AsyncSocketCreator extends AsyncTask<String, String, SSLSocket> {
     }
 
     @Override
-    protected void onProgressUpdate(String... progress) {
-        mListener.onSocketData(progress[0]);
-    }
-
-    @Override
     protected void onPostExecute(SSLSocket socket) {
         if (mListener != null)
-            mListener.onSocketReady(socket, errorMsg);
+            mListener.onSocketReady(socket, dataExtra);
     }
 }

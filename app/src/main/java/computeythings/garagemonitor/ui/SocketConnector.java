@@ -214,18 +214,24 @@ public class SocketConnector implements SocketCreatedListener {
         return name;
     }
 
+    /*
+        Run once the SocketCreator run at creation has completed creation.
+        Will pass either a socket and a message containing the FCM reference ID or a null value
+        and an error message.
+     */
     @Override
-    public void onSocketReady(SSLSocket socket, String errorMsg) {
+    public void onSocketReady(SSLSocket socket, String message) {
         this.socket = socket;
         if (socket != null) {
             isConnected = socket.isConnected();
-
+            // save the reference ID to app preferences
+            new ServerPreferences(context).setServerRefId(name, message);
             // write the last queued message if one exists
             if (queue != null) {
                 socketWrite(queue);
             }
         } else {
-            if (errorMsg != null) {
+            if (message != null) {
                 uiListener.onSocketResult(false);
             }
 
