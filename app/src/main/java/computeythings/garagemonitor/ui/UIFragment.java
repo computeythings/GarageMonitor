@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.Set;
 
 import computeythings.garagemonitor.R;
+import computeythings.garagemonitor.async.SocketConnector;
 import computeythings.garagemonitor.interfaces.SocketResultListener;
 import computeythings.garagemonitor.preferences.ServerPreferences;
 import computeythings.garagemonitor.services.FCMService;
@@ -81,8 +82,6 @@ public class UIFragment extends Fragment
             // create and bind a socket based on currently selected server
             mServer = SocketConnector.fromInfo(mPreferences.getServerInfo(currentServer), mContext,
                     this);
-            mSavedState = mPreferences.getServerInfo(mPreferences.getSelectedServer())
-                    .get(ServerPreferences.LAST_STATE);
         }
     }
 
@@ -120,6 +119,18 @@ public class UIFragment extends Fragment
                     .get(ServerPreferences.LAST_STATE);
         }
         refreshDrawable();
+    }
+
+    /*
+        Refresh UI when receiving data over SSL socket
+     */
+    @Override
+    public void onSocketData(String data) {
+        if(data.equals(STATE_CLOSED) || data.equals(STATE_CLOSING) || data.equals(STATE_OPEN) ||
+                data.equals(STATE_OPENING)) {
+            mSavedState = data;
+            refreshDrawable();
+        }
     }
 
     /*

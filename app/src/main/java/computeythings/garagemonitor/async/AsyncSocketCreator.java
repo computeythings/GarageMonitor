@@ -28,7 +28,7 @@ import computeythings.garagemonitor.interfaces.SocketCreatedListener;
  * Created by bryan on 2/6/18.
  */
 
-public class AsyncSocketCreator extends AsyncTask<String, String, SSLSocket> {
+public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
     private static final String TAG = "SOCKET_CREATOR";
     private final SSLSocketFactory mSocketFactory;
     private final SocketCreatedListener mListener;
@@ -59,15 +59,7 @@ public class AsyncSocketCreator extends AsyncTask<String, String, SSLSocket> {
             OutputStream out = socket.getOutputStream();
             out.write(api.getBytes());
             out.close();
-
-            // the socket should only send out one string and it will be the Document Ref ID
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            String data = null;
-            while (data == null || data.equals("")) {
-                data = in.readLine();
-            }
-            dataExtra = data; // This should be the server refID
-            in.close();
+            dataExtra = "wjgbymmvx7DHO4QXTMXw";
         } catch (IOException e) {
             Log.e(TAG, "Error creating socket to " + server + " on socket " + port);
             e.printStackTrace();

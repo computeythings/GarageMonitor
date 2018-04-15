@@ -1,4 +1,4 @@
-package computeythings.garagemonitor.ui;
+package computeythings.garagemonitor.async;
 
 import android.content.Context;
 import android.net.Uri;
@@ -27,9 +27,6 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
 
-import computeythings.garagemonitor.async.AsyncSocketClose;
-import computeythings.garagemonitor.async.AsyncSocketCreator;
-import computeythings.garagemonitor.async.AsyncSocketWriter;
 import computeythings.garagemonitor.interfaces.SocketCreatedListener;
 import computeythings.garagemonitor.interfaces.SocketResultListener;
 import computeythings.garagemonitor.preferences.ServerPreferences;
@@ -49,6 +46,7 @@ public class SocketConnector implements SocketCreatedListener {
     private static final int BACKGROUND_REQUEST_DELAY = 60000;
 
     private SocketResultListener uiListener;
+    private AsyncSocketReader reader;
     private String queue;
     private Context context;
     private SSLSocket socket;
@@ -64,8 +62,8 @@ public class SocketConnector implements SocketCreatedListener {
         Creates a new SocketConnector from A JSON formatted String
         along with the Context and LocalBroadcastManager.
      */
-    static SocketConnector fromInfo(HashMap<String, String> serverInfo, Context context,
-                                    SocketResultListener uiListener) {
+    public static SocketConnector fromInfo(HashMap<String, String> serverInfo, Context context,
+                                           SocketResultListener uiListener) {
         String name = serverInfo.get(ServerPreferences.SERVER_NAME);
         String address = serverInfo.get(ServerPreferences.SERVER_ADDRESS);
         String apiKey = serverInfo.get(ServerPreferences.SERVER_API_KEY);
@@ -164,7 +162,7 @@ public class SocketConnector implements SocketCreatedListener {
     /*
         Write message to server over socket. Returns false if the message can't be sent.
      */
-    void socketWrite(final String message) {
+    public void socketWrite(final String message) {
         if (isDisconnected()) {
             try {
                 // attempt immediate socket reconnect
@@ -194,9 +192,11 @@ public class SocketConnector implements SocketCreatedListener {
     /*
         Attempts to gracefully close the SSLSocket connection.
      */
-    void socketClose() {
+    public void socketClose() {
         if (sender != null)
             sender.removeCallbacksAndMessages(null); // stop trying to reconnect
+        if (reader != null)
+            reader.cancel(true);
 
         if (isDisconnected())
             return; //what is dead may never die//
@@ -224,6 +224,8 @@ public class SocketConnector implements SocketCreatedListener {
         this.socket = socket;
         if (socket != null) {
             isConnected = socket.isConnected();
+            reader = new AsyncSocketReader(uiListener);
+            reader.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, socket);
             // save the reference ID to app preferences
             new ServerPreferences(context).setServerRefId(name, message);
             // write the last queued message if one exists
@@ -241,17 +243,5 @@ public class SocketConnector implements SocketCreatedListener {
         // we don't want to hold the queue too long. Clear whether the socket connected or not.
         queue = null;
         uiListener.onSocketResult(true);
-    }
-
-    /*
-        Run once server document reference ID is received.
-        Update Firestore listener and subscribe to document.
-     */
-    @Override
-    public void onSocketData(String message) {
-        if (message == null)
-            return;
-        // save the reference ID to app preferences
-        new ServerPreferences(context).setServerRefId(name, message);
     }
 }
