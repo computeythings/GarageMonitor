@@ -193,8 +193,10 @@ public class ServerPreferences {
             subs.remove(server);
             if (subs.size() > 0)
                 editor.putStringSet(refID, subs);
-            else // if the document no longer has any subs, remove it from preferences
+            else {// if the document no longer has any subs, remove it from preferences
                 editor.remove(refID);
+                FirebaseMessaging.getInstance().unsubscribeFromTopic(refID);
+            }
             editor.apply();
         }
 
