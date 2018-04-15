@@ -458,7 +458,9 @@ public class UIFragment extends Fragment
         @Override
         public void onReceive(Context context, Intent intent) {
             mSwipeRefreshLayout.setRefreshing(false);
-            if (getCurrentRefId().equals(intent.getStringExtra(ServerPreferences.SERVER_REFID))) {
+            if (getCurrentRefId() != null &&
+                    getCurrentRefId().equals(intent.getStringExtra(ServerPreferences.SERVER_REFID)))
+            {
                 mSavedState = mPreferences.getServerInfo(mPreferences.getSelectedServer())
                         .get(ServerPreferences.LAST_STATE);
             }
@@ -467,6 +469,8 @@ public class UIFragment extends Fragment
     }
 
     private String getCurrentRefId() {
+        if(mPreferences.getSelectedServer() == null)
+            return null;
         return mPreferences.getServerInfo(mPreferences.getSelectedServer())
                 .get(ServerPreferences.SERVER_REFID);
     }
