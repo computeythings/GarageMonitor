@@ -7,5 +7,6 @@ package computeythings.garagemonitor.interfaces;
  */
 
 public interface SocketResultListener {
-    void onSocketResult(Boolean success);
+    void onSocketResult(boolean success);
+    void onSocketData(String data);
 }

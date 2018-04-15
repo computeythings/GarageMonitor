@@ -110,7 +110,7 @@ public class UIFragment extends Fragment
         Callback function for when transactions are sent over socket connections
      */
     @Override
-    public void onSocketResult(Boolean success) {
+    public void onSocketResult(boolean success) {
         mSwipeRefreshLayout.setRefreshing(false);
         if (!success) {
             Toast.makeText(mContext, "Could not connect to server", Toast.LENGTH_SHORT).show();
