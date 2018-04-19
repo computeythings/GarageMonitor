@@ -3,6 +3,9 @@ package computeythings.garagemonitor.async;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -10,9 +13,11 @@ import java.io.InputStreamReader;
 import javax.net.ssl.SSLSocket;
 
 import computeythings.garagemonitor.interfaces.SocketResultListener;
+import computeythings.garagemonitor.preferences.ServerPreferences;
 
 public class AsyncSocketReader extends AsyncTask<SSLSocket, String, Void> {
     private static final String TAG = "SOCKET_READER";
+    private static final String STATE = "STATE";
     private SocketResultListener uiListener;
 
     AsyncSocketReader(SocketResultListener uiListener) {
@@ -29,10 +34,17 @@ public class AsyncSocketReader extends AsyncTask<SSLSocket, String, Void> {
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             String data;
+            JSONObject json;
             while (socket.isConnected() && !isCancelled()) {
                 data = in.readLine();
                 if (data != null && !data.equals("")) {
-                    publishProgress(data);
+                    try {
+                        json = new JSONObject(data);
+                        publishProgress(json.getString(STATE));
+                    } catch (JSONException e) {
+                        Log.e(TAG, "Could not process data received over TCP socket: " + data);
+                        e.printStackTrace();
+                    }
                 }
             }
         } catch (IOException | NullPointerException e) {

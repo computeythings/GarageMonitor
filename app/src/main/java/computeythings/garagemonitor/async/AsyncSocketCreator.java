@@ -59,7 +59,11 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
             OutputStream out = socket.getOutputStream();
             out.write(api.getBytes());
             out.close();
-            dataExtra = "wjgbymmvx7DHO4QXTMXw";
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            do {
+                dataExtra = in.readLine();
+            } while (dataExtra == null || dataExtra.equals(""));
+            in.close();
         } catch (IOException e) {
             Log.e(TAG, "Error creating socket to " + server + " on socket " + port);
             e.printStackTrace();

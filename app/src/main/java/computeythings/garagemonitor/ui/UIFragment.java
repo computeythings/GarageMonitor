@@ -52,7 +52,7 @@ public class UIFragment extends Fragment
     private static final String STATE_OPENING = "OPENING";
     private static final String STATE_CLOSED = "CLOSED";
     private static final String STATE_CLOSING = "CLOSING";
-    private static final String STATE_NONE = "NEITHER";
+    private static final String STATE_NONE = "NONE";
     private static final String STATE_DISCONNECTED = "DISCONNECTED";
 
     private String mSavedState;
@@ -126,8 +126,9 @@ public class UIFragment extends Fragment
      */
     @Override
     public void onSocketData(String data) {
+        mSwipeRefreshLayout.setRefreshing(false);
         if(data.equals(STATE_CLOSED) || data.equals(STATE_CLOSING) || data.equals(STATE_OPEN) ||
-                data.equals(STATE_OPENING)) {
+                data.equals(STATE_OPENING) || data.equals(STATE_NONE)) {
             mSavedState = data;
             refreshDrawable();
         }

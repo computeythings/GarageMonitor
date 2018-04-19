@@ -12,6 +12,7 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -57,7 +58,7 @@ public class ServerPreferences {
             json.put(SERVER_API_KEY, apikey);
             json.put(SERVER_PORT, port);
             json.put(SERVER_CERT, certLocation);
-            json.put(NOTIFICATIONS, false);
+            json.put(NOTIFICATIONS, true); // TODO: make this false once notifications page is implemented
         } catch (JSONException e) {
             Log.e(TAG, "Unexpected JSON error");
             e.printStackTrace();
@@ -94,18 +95,10 @@ public class ServerPreferences {
         Whether or not user should receive alerts from this server
      */
     public boolean notificationsEnabled(String server) {
-        SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + SERVERS,
-                Context.MODE_PRIVATE);
-        JSONObject json;
-        try {
-            json = new JSONObject(prefs.getString(server, ""));
-            if (json.has(NOTIFICATIONS) && json.getBoolean(NOTIFICATIONS))
-                return true; // no need to do anymore since the same ID is already stored.
-        } catch (JSONException e) {
-            Log.d(TAG, "Could not parse info for " + server);
-            e.printStackTrace();
-        }
-        return false;
+        HashMap info = getServerInfo(server);
+        if(info == null || !info.containsKey(NOTIFICATIONS))
+            return false;
+        return Boolean.valueOf(info.get(NOTIFICATIONS).toString());
     }
 
     public boolean setServerRefId(String server, String refID) {
@@ -120,7 +113,7 @@ public class ServerPreferences {
             FirebaseMessaging.getInstance().subscribeToTopic(refID);
             json.put(SERVER_REFID, refID);
         } catch (JSONException e) {
-            Log.d(TAG, "Could not parse info for " + server);
+            Log.e(TAG, "Could not parse info for " + server);
             e.printStackTrace();
             return false;
         }
