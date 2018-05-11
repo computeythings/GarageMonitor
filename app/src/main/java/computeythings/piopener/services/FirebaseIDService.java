@@ -1,11 +1,11 @@
-package computeythings.garagemonitor.services;
+package computeythings.piopener.services;
 
 import android.util.Log;
 
 import com.google.firebase.iid.FirebaseInstanceIdService;
 import com.google.firebase.messaging.FirebaseMessaging;
 
-import computeythings.garagemonitor.preferences.ServerPreferences;
+import computeythings.piopener.preferences.ServerPreferences;
 
 public class FirebaseIDService extends FirebaseInstanceIdService {
     private static final String TAG = "InstanceIDService";

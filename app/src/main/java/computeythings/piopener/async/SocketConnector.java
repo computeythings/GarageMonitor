@@ -1,4 +1,4 @@
-package computeythings.garagemonitor.async;
+package computeythings.piopener.async;
 
 import android.content.Context;
 import android.net.Uri;
@@ -27,9 +27,9 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
 
-import computeythings.garagemonitor.interfaces.SocketCreatedListener;
-import computeythings.garagemonitor.interfaces.SocketResultListener;
-import computeythings.garagemonitor.preferences.ServerPreferences;
+import computeythings.piopener.interfaces.SocketCreatedListener;
+import computeythings.piopener.interfaces.SocketResultListener;
+import computeythings.piopener.preferences.ServerPreferences;
 
 /**
  * Representation and interface for SSLSocket connections

@@ -1,4 +1,4 @@
-package computeythings.garagemonitor.preferences;
+package computeythings.piopener.preferences;
 
 import android.content.Context;
 import android.content.SharedPreferences;

@@ -1,4 +1,4 @@
-package computeythings.garagemonitor;
+package computeythings.piopener;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

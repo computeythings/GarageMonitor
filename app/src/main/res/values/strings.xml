@@ -20,6 +20,22 @@
     <string name="add">Add</string>
     <string name="update">Update</string>
     <string name="cancel">Cancel</string>
+    <string name="delete_btn">X</string>
     <string name="edit">Edit Server</string>
     <string name="delete">Delete</string>
+
+    <string name="advanced">Advanced</string>
+    <string name="basic">Basic</string>
+    <string name="notifications">Notifications:</string>
+    <string name="disabled">0</string>
+    <string name="notification_summary">
+        Receive notifications from this server on state changes.
+    </string>
+    <string name="timer_summary">
+        Receive notifications every X minutes while this node is not CLOSED
+    </string>
+    <string name="opening_notifications">OPENING</string>
+    <string name="open_notifications">OPEN</string>
+    <string name="closing_notifications">CLOSING</string>
+    <string name="closed_notifications">CLOSED</string>
 </resources>

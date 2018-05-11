@@ -1,4 +1,4 @@
-package computeythings.garagemonitor.interfaces;
+package computeythings.piopener.interfaces;
 
 /**
  * Interface to listen for results when writing to a socket connection

@@ -1,4 +1,4 @@
-package computeythings.garagemonitor.async;
+package computeythings.piopener.async;
 
 import android.os.AsyncTask;
 import android.util.Log;
@@ -12,8 +12,8 @@ import java.io.InputStreamReader;
 
 import javax.net.ssl.SSLSocket;
 
-import computeythings.garagemonitor.interfaces.SocketResultListener;
-import computeythings.garagemonitor.preferences.ServerPreferences;
+import computeythings.piopener.interfaces.SocketResultListener;
+import computeythings.piopener.preferences.ServerPreferences;
 
 public class AsyncSocketReader extends AsyncTask<SSLSocket, String, Void> {
     private static final String TAG = "SOCKET_READER";

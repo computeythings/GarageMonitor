@@ -1,4 +1,4 @@
-package computeythings.garagemonitor.interfaces;
+package computeythings.piopener.interfaces;
 
 import javax.net.ssl.SSLSocket;
 

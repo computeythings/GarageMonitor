@@ -1,4 +1,4 @@
-package computeythings.garagemonitor.async;
+package computeythings.piopener.async;
 
 import android.os.AsyncTask;
 import android.util.Log;
@@ -19,7 +19,7 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
-import computeythings.garagemonitor.interfaces.SocketCreatedListener;
+import computeythings.piopener.interfaces.SocketCreatedListener;
 
 
 /**

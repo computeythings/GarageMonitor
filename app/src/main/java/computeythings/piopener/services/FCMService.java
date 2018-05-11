@@ -1,4 +1,4 @@
-package computeythings.garagemonitor.services;
+package computeythings.piopener.services;
 
 import android.app.ActivityManager;
 import android.content.ComponentName;
@@ -17,8 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import computeythings.garagemonitor.R;
-import computeythings.garagemonitor.preferences.ServerPreferences;
+import computeythings.piopener.R;
+import computeythings.piopener.preferences.ServerPreferences;
 
 public class FCMService extends FirebaseMessagingService {
     private static final String TAG = "FCMService";

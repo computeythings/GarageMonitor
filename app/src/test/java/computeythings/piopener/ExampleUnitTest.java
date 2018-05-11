@@ -1,4 +1,4 @@
-package computeythings.garagemonitor;
+package computeythings.piopener;
 
 import org.junit.Test;
 

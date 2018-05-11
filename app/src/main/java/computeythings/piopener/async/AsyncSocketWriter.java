@@ -1,4 +1,4 @@
-package computeythings.garagemonitor.async;
+package computeythings.piopener.async;
 
 import android.os.Handler;
 import android.util.Log;
@@ -8,7 +8,7 @@ import java.io.OutputStream;
 
 import javax.net.ssl.SSLSocket;
 
-import computeythings.garagemonitor.interfaces.SocketResultListener;
+import computeythings.piopener.interfaces.SocketResultListener;
 
 public class AsyncSocketWriter extends Thread {
     private static final String TAG = "SOCKET_WRITER";

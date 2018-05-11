@@ -1,4 +1,4 @@
-package computeythings.garagemonitor.ui;
+package computeythings.piopener.ui;
 
 import android.os.Bundle;
 import android.support.v4.view.GravityCompat;
@@ -6,7 +6,7 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 
-import computeythings.garagemonitor.R;
+import computeythings.piopener.R;
 
 /**
  * Activity responsible for fragment running and communication. Responds to callbacks from

@@ -1,4 +1,4 @@
-package computeythings.garagemonitor.ui;
+package computeythings.piopener.ui;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -15,6 +15,7 @@ import android.support.v4.app.DialogFragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.io.File;
@@ -23,8 +24,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import computeythings.garagemonitor.R;
-import computeythings.garagemonitor.preferences.ServerPreferences;
+import computeythings.piopener.R;
+import computeythings.piopener.preferences.ServerPreferences;
 
 /**
  * Dialog used to add and edit server settings. Upon adding a server, a callback is sent to the
@@ -68,7 +69,23 @@ public class AddServerDialog extends DialogFragment {
 
         final View dialogLayout = inflater.inflate(R.layout.dialog_addserver, null);
         builder.setView(dialogLayout);
+        final LinearLayout advanced = dialogLayout.findViewById(R.id.advanced_options);
 
+        dialogLayout.findViewById(R.id.show_advanced).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(advanced.getVisibility() == View.GONE) {
+                    advanced.setVisibility(View.VISIBLE);
+                    ((Button)(view)).setText(R.string.basic);
+                } else {
+                    advanced.setVisibility(View.GONE);
+                    ((Button)(view)).setText(R.string.advanced);
+                }
+            }
+        });
+
+        //TODO: implement notification options with preferences Set.add/remove(state)
+        //TODO: implement timed notifications with preferences timer != 0
         mClearCertButton = dialogLayout.findViewById(R.id.clear_text_button);
         mClearCertButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -101,8 +118,6 @@ public class AddServerDialog extends DialogFragment {
 
             // address field shouldn't need to be changed so we'll disallow it
             mAddressField.setText(args.getString(EDIT_ADDRESS, ""));
-            mAddressField.setFocusable(false);
-            mAddressField.setBackground(null);
 
             mAPIKeyField.setText(args.getString(EDIT_API_KEY, ""));
             mPortField.setText(args.getString(EDIT_PORT, ""));

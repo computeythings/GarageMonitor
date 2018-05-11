@@ -1,4 +1,4 @@
-package computeythings.garagemonitor.ui;
+package computeythings.piopener.ui;
 
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
@@ -33,11 +33,11 @@ import android.widget.Toast;
 import java.util.HashMap;
 import java.util.Set;
 
-import computeythings.garagemonitor.R;
-import computeythings.garagemonitor.async.SocketConnector;
-import computeythings.garagemonitor.interfaces.SocketResultListener;
-import computeythings.garagemonitor.preferences.ServerPreferences;
-import computeythings.garagemonitor.services.FCMService;
+import computeythings.piopener.R;
+import computeythings.piopener.async.SocketConnector;
+import computeythings.piopener.interfaces.SocketResultListener;
+import computeythings.piopener.preferences.ServerPreferences;
+import computeythings.piopener.services.FCMService;
 
 /**
  * Main UI Fragment responsible for server setup and user interaction. Main body of code.
