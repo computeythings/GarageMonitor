@@ -15,6 +15,7 @@ import android.support.v4.app.DialogFragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -23,6 +24,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.HashSet;
+import java.util.Set;
 
 import computeythings.piopener.R;
 import computeythings.piopener.preferences.ServerPreferences;
@@ -41,6 +44,10 @@ public class AddServerDialog extends DialogFragment {
     public static final String EDIT_API_KEY = "EDIT_API_KEY";
     public static final String EDIT_PORT = "EDIT_PORT";
     public static final String EDIT_CERT = "EDIT_CERT";
+    private static final String STATE_OPEN = "OPEN";
+    private static final String STATE_OPENING = "OPENING";
+    private static final String STATE_CLOSED = "CLOSED";
+    private static final String STATE_CLOSING = "CLOSING";
     private static final int READ_REQUEST_CODE = 444;
 
     private ServerPreferences mPrefs;
@@ -51,6 +58,11 @@ public class AddServerDialog extends DialogFragment {
     private TextView mPortField;
     private TextView mCertField;
     private TextView mClearCertButton;
+    private TextView mNotificationTimer;
+    private CheckBox mOpenNotifications;
+    private CheckBox mOpeningNotifications;
+    private CheckBox mClosedNotifications;
+    private CheckBox mClosingNotifications;
     private String mCertURI;
     private String mEditKey;
 
@@ -84,7 +96,7 @@ public class AddServerDialog extends DialogFragment {
             }
         });
 
-        //TODO: implement notification options with preferences Set.add/remove(state)
+        //TODO: fill in notification options on edit
         //TODO: implement timed notifications with preferences timer != 0
         mClearCertButton = dialogLayout.findViewById(R.id.clear_text_button);
         mClearCertButton.setOnClickListener(new View.OnClickListener() {
@@ -101,6 +113,11 @@ public class AddServerDialog extends DialogFragment {
         mAPIKeyField = dialogLayout.findViewById(R.id.apikey_value);
         mPortField = dialogLayout.findViewById(R.id.port_value);
         mCertField = dialogLayout.findViewById(R.id.cert_value);
+        mNotificationTimer = dialogLayout.findViewById(R.id.notification_timer);
+        mOpenNotifications = dialogLayout.findViewById(R.id.open_notifications);
+        mOpeningNotifications = dialogLayout.findViewById(R.id.opening_notifications);
+        mClosedNotifications = dialogLayout.findViewById(R.id.closed_notifications);
+        mClosingNotifications = dialogLayout.findViewById(R.id.closing_notifications);
 
         // upload cert file from local storage
         Button certSearchButton = dialogLayout.findViewById(R.id.cert_search_btn);
@@ -182,6 +199,10 @@ public class AddServerDialog extends DialogFragment {
                     String serverApiKey = mAPIKeyField.getText().toString().trim();
                     String serverPort = mPortField.getText().toString().trim();
                     String certLocation = mCertField.getText().toString().trim();
+                    Set<String> monitoredStates = new HashSet<>();
+                    String timer = mNotificationTimer.getText().toString().trim();
+                    if(timer.equals(""))
+                        timer = "0";
 
                     if (serverName.equals(""))
                         serverName = serverAddress;
@@ -189,6 +210,14 @@ public class AddServerDialog extends DialogFragment {
                         serverPort = "4444";
                     if (certLocation.equals("") && mCertURI == null)
                         mCertURI = certLocation;
+                    if(mOpenNotifications.isChecked())
+                        monitoredStates.add(STATE_OPEN);
+                    if(mOpeningNotifications.isChecked())
+                        monitoredStates.add(STATE_OPENING);
+                    if(mClosedNotifications.isChecked())
+                        monitoredStates.add(STATE_CLOSED);
+                    if(mClosingNotifications.isChecked())
+                        monitoredStates.add(STATE_CLOSING);
 
                     if (serverAddress.length() <= 0 || serverApiKey.length() <= 0) {
                         if (serverApiKey.length() <= 0)
@@ -222,6 +251,7 @@ public class AddServerDialog extends DialogFragment {
                         // store new server info in preferences
                         mPrefs.addServer(serverName, serverAddress, serverApiKey,
                                 Integer.parseInt(serverPort), mCertURI);
+                        mPrefs.setNotifications(serverName, monitoredStates, Long.parseLong(timer));
 
                         // send callback to host activity that a server was added
                         ((OnServerListChangeListener) getHost()).onServerModify(serverName);

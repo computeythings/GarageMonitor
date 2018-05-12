@@ -12,7 +12,6 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -35,6 +34,7 @@ public class ServerPreferences {
     public static final String SERVER_CERT = "CERT_LOCATION";
     public static final String SERVER_REFID = "REFID";
     public static final String NOTIFICATIONS = "NOTIFICATIONS";
+    public static final String NOTIFICATION_TIMER = "NOTIFICATION_TIMER";
     public static final String LAST_STATE = "LAST_STATE";
     public static final String LAST_UPDATED = "LAST_UPDATED";
 
@@ -58,7 +58,6 @@ public class ServerPreferences {
             json.put(SERVER_API_KEY, apikey);
             json.put(SERVER_PORT, port);
             json.put(SERVER_CERT, certLocation);
-            json.put(NOTIFICATIONS, true); // TODO: make this false once notifications page is implemented
         } catch (JSONException e) {
             Log.e(TAG, "Unexpected JSON error");
             e.printStackTrace();
@@ -92,13 +91,34 @@ public class ServerPreferences {
     }
 
     /*
+        Updates notification info for a given server
+     */
+    public void setNotifications(String server, Set<String> monitoredStates,
+                                 long notificationTimer) {
+        SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + SERVERS,
+                Context.MODE_PRIVATE);
+        JSONObject serverInfo;
+        try {
+            serverInfo = new JSONObject(prefs.getString(server, ""));
+            serverInfo.put(NOTIFICATIONS, monitoredStates.toString());
+            serverInfo.put(NOTIFICATION_TIMER, notificationTimer);
+        } catch (JSONException e) {
+            Log.e(TAG, "Received bad JSON info for " + server);
+            return;
+        }
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString(server, serverInfo.toString());
+        editor.apply();
+    }
+
+    /*
         Whether or not user should receive alerts from this server
      */
-    public boolean notificationsEnabled(String server) {
-        HashMap info = getServerInfo(server);
-        if(info == null || !info.containsKey(NOTIFICATIONS))
-            return false;
-        return Boolean.valueOf(info.get(NOTIFICATIONS).toString());
+    public String notificationsEnabled(String server) {
+        HashMap<String, String> info = getServerInfo(server);
+        if (info == null || !info.containsKey(NOTIFICATIONS))
+            return null;
+        return info.get(NOTIFICATIONS);
     }
 
     public boolean setServerRefId(String server, String refID) {

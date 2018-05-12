@@ -177,6 +177,7 @@
                 android:textSize="12sp" />
 
             <EditText
+                android:id="@+id/notification_timer"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
