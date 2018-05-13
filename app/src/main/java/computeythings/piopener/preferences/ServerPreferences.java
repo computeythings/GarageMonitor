@@ -9,9 +9,11 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -114,11 +116,14 @@ public class ServerPreferences {
     /*
         Whether or not user should receive alerts from this server
      */
-    public String notificationsEnabled(String server) {
+    public List<String> notificationsEnabled(String server) {
         HashMap<String, String> info = getServerInfo(server);
         if (info == null || !info.containsKey(NOTIFICATIONS))
             return null;
-        return info.get(NOTIFICATIONS);
+        String listString = info.get(NOTIFICATIONS);
+        // remove brackets
+        listString = listString.substring(1,listString.length() - 1);
+        return Arrays.asList(listString.split(", "));
     }
 
     public boolean setServerRefId(String server, String refID) {

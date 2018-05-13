@@ -34,12 +34,12 @@ public class FCMService extends FirebaseMessagingService {
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
         String sender = remoteMessage.getFrom();
+        Log.d(TAG, "Received message from " + sender);
         if(sender == null) // discard if we can't verify sender
             return;
         // sender should be /topics/<refID> so we should start past the last '/'
         sender = sender.substring(sender.lastIndexOf('/') + 1);
         Map<String, String> data = remoteMessage.getData();
-        Log.d(TAG, "Received message from " + sender);
         if(remoteMessage.getData().size() > 0) {
             ServerPreferences prefs = new ServerPreferences(this);
             Log.d(TAG, "Message data payload: " + remoteMessage.getData());
