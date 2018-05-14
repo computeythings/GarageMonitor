@@ -95,7 +95,7 @@ public class ServerPreferences {
     /*
         Updates notification info for a given server
      */
-    public void setNotifications(String server, Set<String> monitoredStates,
+    public boolean setNotifications(String server, Set<String> monitoredStates,
                                  long notificationTimer) {
         SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + SERVERS,
                 Context.MODE_PRIVATE);
@@ -106,11 +106,11 @@ public class ServerPreferences {
             serverInfo.put(NOTIFICATION_TIMER, notificationTimer);
         } catch (JSONException e) {
             Log.e(TAG, "Received bad JSON info for " + server);
-            return;
+            return false;
         }
         SharedPreferences.Editor editor = prefs.edit();
         editor.putString(server, serverInfo.toString());
-        editor.apply();
+        return editor.commit();
     }
 
     /*
@@ -202,7 +202,7 @@ public class ServerPreferences {
             return true; // return true if the list doesn't already contain the server
 
         // remove the server from its subscribed upstream document
-        String refID = getServerInfo(server).get(server);
+        String refID = getServerInfo(server).get(SERVER_REFID);
         if (refID != null) {
             SharedPreferences refPrefs = mContext.getSharedPreferences(PREFERENCES + REFIDS,
                     Context.MODE_PRIVATE);

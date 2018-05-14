@@ -96,6 +96,7 @@ public class AddServerDialog extends DialogFragment {
             }
         });
 
+        //TODO: remove server refid in preferences when deleted
         //TODO: fill in notification options on edit
         //TODO: implement timed notifications with preferences timer != 0
         mClearCertButton = dialogLayout.findViewById(R.id.clear_text_button);
