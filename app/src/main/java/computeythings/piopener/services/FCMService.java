@@ -45,14 +45,15 @@ public class FCMService extends FirebaseMessagingService {
             Log.d(TAG, "Message data payload: " + remoteMessage.getData());
             Set<String> subs = prefs.getServersFromRef(sender);
 
+            String state;
             // update each subscribed server
             for(String subscribedServer : subs) {
+                state = data.get(STATE);
                 // update stored values of server
-                prefs.updateServer(subscribedServer, data.get(STATE), remoteMessage.getSentTime());
+                prefs.updateServer(subscribedServer, state, remoteMessage.getSentTime());
                 // should only send notifications if app isn't active and notifications are enabled
-                if(!checkApp() && prefs.notificationsEnabled(subscribedServer)
-                        .contains(data.get(STATE))) {
-                    sendNotification(subscribedServer, data.get(STATE), remoteMessage.getSentTime());
+                if(!checkApp() && prefs.notificationsEnabled(subscribedServer, state)) {
+                    sendNotification(subscribedServer, state, remoteMessage.getSentTime());
                 }
             }
 
