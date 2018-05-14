@@ -35,10 +35,17 @@ public class ServerPreferences {
     public static final String SERVER_PORT = "PORT";
     public static final String SERVER_CERT = "CERT_LOCATION";
     public static final String SERVER_REFID = "REFID";
-    public static final String NOTIFICATIONS = "NOTIFICATIONS";
+    public static final String NOTIFY_OPEN = "NOTIFY_OPEN";
+    public static final String NOTIFY_OPENING = "NOTIFY_OPENING";
+    public static final String NOTIFY_CLOSED = "NOTIFY_CLOSED";
+    public static final String NOTIFY_CLOSING = "NOTIFY_CLOSING";
     public static final String NOTIFICATION_TIMER = "NOTIFICATION_TIMER";
     public static final String LAST_STATE = "LAST_STATE";
     public static final String LAST_UPDATED = "LAST_UPDATED";
+    private static final String STATE_OPEN = "OPEN";
+    private static final String STATE_OPENING = "OPENING";
+    private static final String STATE_CLOSED = "CLOSED";
+    private static final String STATE_CLOSING = "CLOSING";
 
     private Context mContext;
 
@@ -102,7 +109,10 @@ public class ServerPreferences {
         JSONObject serverInfo;
         try {
             serverInfo = new JSONObject(prefs.getString(server, ""));
-            serverInfo.put(NOTIFICATIONS, monitoredStates.toString());
+            serverInfo.put(NOTIFY_OPEN, monitoredStates.contains(STATE_OPEN));
+            serverInfo.put(NOTIFY_OPENING, monitoredStates.contains(STATE_OPENING));
+            serverInfo.put(NOTIFY_CLOSED, monitoredStates.contains(STATE_CLOSED));
+            serverInfo.put(NOTIFY_CLOSING, monitoredStates.contains(STATE_CLOSING));
             serverInfo.put(NOTIFICATION_TIMER, notificationTimer);
         } catch (JSONException e) {
             Log.e(TAG, "Received bad JSON info for " + server);
@@ -116,14 +126,24 @@ public class ServerPreferences {
     /*
         Whether or not user should receive alerts from this server
      */
-    public List<String> notificationsEnabled(String server) {
+    public boolean notificationsEnabled(String server, String state) {
         HashMap<String, String> info = getServerInfo(server);
-        if (info == null || !info.containsKey(NOTIFICATIONS))
-            return null;
-        String listString = info.get(NOTIFICATIONS);
-        // remove brackets
-        listString = listString.substring(1,listString.length() - 1);
-        return Arrays.asList(listString.split(", "));
+        if (info == null)
+            return false;
+        switch (state) {
+            case STATE_OPEN:
+                return Boolean.valueOf(info.get(NOTIFY_OPEN));
+            case STATE_OPENING:
+                return Boolean.valueOf(info.get(NOTIFY_OPENING));
+            case STATE_CLOSED:
+                return Boolean.valueOf(info.get(NOTIFY_CLOSED));
+            case STATE_CLOSING:
+                return Boolean.valueOf(info.get(NOTIFY_CLOSING));
+            // If we run into a non-specified state,
+            // we should probably alert the user of something wonky going on
+            default:
+                return true;
+        }
     }
 
     public boolean setServerRefId(String server, String refID) {

@@ -24,11 +24,22 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
 import computeythings.piopener.R;
 import computeythings.piopener.preferences.ServerPreferences;
+
+import static computeythings.piopener.preferences.ServerPreferences.NOTIFY_CLOSED;
+import static computeythings.piopener.preferences.ServerPreferences.NOTIFY_CLOSING;
+import static computeythings.piopener.preferences.ServerPreferences.NOTIFY_OPEN;
+import static computeythings.piopener.preferences.ServerPreferences.NOTIFY_OPENING;
+import static computeythings.piopener.preferences.ServerPreferences.SERVER_ADDRESS;
+import static computeythings.piopener.preferences.ServerPreferences.SERVER_API_KEY;
+import static computeythings.piopener.preferences.ServerPreferences.SERVER_CERT;
+import static computeythings.piopener.preferences.ServerPreferences.SERVER_NAME;
+import static computeythings.piopener.preferences.ServerPreferences.SERVER_PORT;
 
 /**
  * Dialog used to add and edit server settings. Upon adding a server, a callback is sent to the
@@ -39,11 +50,11 @@ import computeythings.piopener.preferences.ServerPreferences;
 
 public class AddServerDialog extends DialogFragment {
     private static final String TAG = "ADD_SERVER_DIALOG";
+    public static final String EDIT_INFO = "EDIT_INFO";
     public static final String EDIT_NAME = "EDIT_NAME";
     public static final String EDIT_ADDRESS = "EDIT_ADDRESS";
     public static final String EDIT_API_KEY = "EDIT_API_KEY";
     public static final String EDIT_PORT = "EDIT_PORT";
-    public static final String EDIT_CERT = "EDIT_CERT";
     private static final String STATE_OPEN = "OPEN";
     private static final String STATE_OPENING = "OPENING";
     private static final String STATE_CLOSED = "CLOSED";
@@ -64,7 +75,7 @@ public class AddServerDialog extends DialogFragment {
     private CheckBox mClosedNotifications;
     private CheckBox mClosingNotifications;
     private String mCertURI;
-    private String mEditKey;
+    private String mServerName;
 
     public interface OnServerListChangeListener {
         void onServerModify(String server);
@@ -96,8 +107,6 @@ public class AddServerDialog extends DialogFragment {
             }
         });
 
-        //TODO: remove server refid in preferences when deleted
-        //TODO: fill in notification options on edit
         //TODO: implement timed notifications with preferences timer != 0
         mClearCertButton = dialogLayout.findViewById(R.id.clear_text_button);
         mClearCertButton.setOnClickListener(new View.OnClickListener() {
@@ -129,28 +138,31 @@ public class AddServerDialog extends DialogFragment {
             }
         });
 
-        if (args != null) { // args are null on add and initialized on edit
-            mNameField.setText(args.getString(EDIT_NAME, ""));
-            // the server name is the key value in server prefs
-            mEditKey = args.getString(EDIT_NAME, "");
-
-            // address field shouldn't need to be changed so we'll disallow it
-            mAddressField.setText(args.getString(EDIT_ADDRESS, ""));
-
-            mAPIKeyField.setText(args.getString(EDIT_API_KEY, ""));
-            mPortField.setText(args.getString(EDIT_PORT, ""));
-
-            String location = args.getString(EDIT_CERT, "");
-            if (location.equals(""))
+        // args are null on add and initialized on edit
+        if (args != null && args.getSerializable(EDIT_INFO) != null) {
+            // Populate current values
+            HashMap serverInfo = (HashMap) args.getSerializable(EDIT_INFO);
+            mServerName = (String) serverInfo.get(SERVER_NAME);
+            mNameField.setText(mServerName);
+            mAddressField.setText((String) serverInfo.get(SERVER_ADDRESS));
+            mAPIKeyField.setText((String) serverInfo.get(SERVER_API_KEY));
+            mPortField.setText((String) serverInfo.get(SERVER_PORT));
+            mCertURI = (String) serverInfo.get(SERVER_CERT);
+            // If we don't have a saved cert location, it's because there is no self-signed cert
+            if (mCertURI.equals(""))
                 mCertField.setHint("N/A");
             else {
-                String certLocation = location.substring(location.lastIndexOf(File.separator) + 1);
-                mCertField.setText(certLocation);
+                // Just show the file name. It's cleaner that way.
+                String certName = mCertURI.substring(mCertURI.lastIndexOf(File.separator) + 1);
+                mCertField.setText(certName);
                 mClearCertButton.setVisibility(View.VISIBLE);
             }
+            mOpenNotifications.setChecked(Boolean.valueOf((String) serverInfo.get(NOTIFY_OPEN)));
+            mOpeningNotifications.setChecked(Boolean.valueOf((String) serverInfo.get(NOTIFY_OPENING)));
+            mClosedNotifications.setChecked(Boolean.valueOf((String) serverInfo.get(NOTIFY_CLOSED)));
+            mClosingNotifications.setChecked(Boolean.valueOf((String) serverInfo.get(NOTIFY_CLOSING)));
 
-            mCertURI = args.getString(EDIT_CERT);
-
+            // Change edit buttons and give Delete option
             builder.setNeutralButton(R.string.delete, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
@@ -239,7 +251,7 @@ public class AddServerDialog extends DialogFragment {
 
                     final OnServerListChangeListener host = (OnServerListChangeListener) getHost();
 
-                    if (mEditKey == null && mPrefs.getServerList().contains(serverName)) {
+                    if (mServerName == null && mPrefs.getServerList().contains(serverName)) {
                         new AlertDialog.Builder(getContext())
                                 .setTitle("Server Name Error")
                                 .setMessage("A server with that name already exists!")
@@ -247,8 +259,8 @@ public class AddServerDialog extends DialogFragment {
                                 .setNegativeButton(android.R.string.ok, null).show();
                     } else {
                         // If the key was changed, remove the key/value pair
-                        if (mEditKey != null && !serverName.equals(mEditKey))
-                            host.onServerDeleted(mEditKey);
+                        if (mServerName != null && !serverName.equals(mServerName))
+                            host.onServerDeleted(mServerName);
                         // store new server info in preferences
                         mPrefs.addServer(serverName, serverAddress, serverApiKey,
                                 Integer.parseInt(serverPort), mCertURI);
@@ -292,7 +304,7 @@ public class AddServerDialog extends DialogFragment {
                 .setIcon(android.R.drawable.ic_dialog_alert)
                 .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
-                        host.onServerDeleted(mEditKey);
+                        host.onServerDeleted(mServerName);
                     }
                 })
                 .setNegativeButton(android.R.string.no, null).show();
@@ -384,6 +396,8 @@ public class AddServerDialog extends DialogFragment {
             mSelectedField = EDIT_API_KEY;
         if (mPortField.isFocused())
             mSelectedField = EDIT_PORT;
+        if (mAddressField.isFocused())
+            mSelectedField = EDIT_ADDRESS;
         super.onStop();
     }
 }

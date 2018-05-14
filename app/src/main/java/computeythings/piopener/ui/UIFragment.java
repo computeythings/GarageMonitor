@@ -304,7 +304,7 @@ public class UIFragment extends Fragment
                     mPreferences.getSelectedServer());
             DialogFragment dialog = new AddServerDialog();
             Bundle editInfo = new Bundle();
-            editInfo.putString(AddServerDialog.EDIT_NAME,
+            /*editInfo.putString(AddServerDialog.EDIT_NAME,
                     serverInfo.get(ServerPreferences.SERVER_NAME));
             editInfo.putString(AddServerDialog.EDIT_ADDRESS,
                     serverInfo.get(ServerPreferences.SERVER_ADDRESS));
@@ -313,8 +313,8 @@ public class UIFragment extends Fragment
             editInfo.putString(AddServerDialog.EDIT_PORT,
                     serverInfo.get(ServerPreferences.SERVER_PORT));
             editInfo.putString(AddServerDialog.EDIT_CERT,
-                    serverInfo.get(ServerPreferences.SERVER_CERT));
-
+                    serverInfo.get(ServerPreferences.SERVER_CERT));*/
+            editInfo.putSerializable(AddServerDialog.EDIT_INFO, serverInfo);
             dialog.setArguments(editInfo);
             dialog.show(getFragmentManager(), "new_server");
             return true;
