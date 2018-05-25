@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
@@ -63,6 +62,7 @@ public class UIFragment extends Fragment
     private DrawerLayout mDrawer;
     private Menu mServerMenu;
     private Menu mSettingsMenu;
+    private BackgroundAnimator mAnimator;
 
     private SocketConnector mServer;
     private ServerPreferences mPreferences;
@@ -127,7 +127,7 @@ public class UIFragment extends Fragment
     @Override
     public void onSocketData(String data) {
         mSwipeRefreshLayout.setRefreshing(false);
-        if(data.equals(STATE_CLOSED) || data.equals(STATE_CLOSING) || data.equals(STATE_OPEN) ||
+        if (data.equals(STATE_CLOSED) || data.equals(STATE_CLOSING) || data.equals(STATE_OPEN) ||
                 data.equals(STATE_OPENING) || data.equals(STATE_NONE)) {
             mSavedState = data;
             refreshDrawable();
@@ -243,6 +243,11 @@ public class UIFragment extends Fragment
             ImageView statusView = mParentView.findViewById(R.id.door_status);
             if (statusView == null)
                 return; // don't try to set drawable if the view doesn't exist
+            if(mAnimator == null) {
+                mAnimator = new BackgroundAnimator();
+            }
+            mAnimator.stop();
+            mAnimator.setBackground(statusView);
 
             switch (mSavedState) {
                 case STATE_OPEN:
@@ -252,12 +257,10 @@ public class UIFragment extends Fragment
                     statusView.setImageResource(R.drawable.garage_closed);
                     break;
                 case STATE_OPENING:
-                    statusView.setImageResource(R.drawable.garage_opening_animation);
-                    ((AnimationDrawable) statusView.getDrawable()).start();
+                    mAnimator.start(BackgroundAnimator.OPENING);
                     break;
                 case STATE_CLOSING:
-                    statusView.setImageResource(R.drawable.garage_closing_animation);
-                    ((AnimationDrawable) statusView.getDrawable()).start();
+                    mAnimator.start(BackgroundAnimator.CLOSING);
                     break;
                 case STATE_NONE:
                     statusView.setImageResource(R.drawable.garage_middle);
@@ -377,6 +380,7 @@ public class UIFragment extends Fragment
         mBroadcastReceiver = new MessageReceiver();
         LocalBroadcastManager.getInstance(mContext).registerReceiver(mBroadcastReceiver,
                 new IntentFilter(FCMService.SERVER_UPDATE_RECEIVED));
+        mAnimator = new BackgroundAnimator();
     }
 
     /*
@@ -451,7 +455,7 @@ public class UIFragment extends Fragment
 
     @Override
     public void onPause() {
-        if(!getActivity().isChangingConfigurations())
+        if (!getActivity().isChangingConfigurations())
             socketClose();
         super.onPause();
     }
@@ -471,8 +475,7 @@ public class UIFragment extends Fragment
         public void onReceive(Context context, Intent intent) {
             mSwipeRefreshLayout.setRefreshing(false);
             if (getCurrentRefId() != null &&
-                    getCurrentRefId().equals(intent.getStringExtra(ServerPreferences.SERVER_REFID)))
-            {
+                    getCurrentRefId().equals(intent.getStringExtra(ServerPreferences.SERVER_REFID))) {
                 mSavedState = mPreferences.getServerInfo(mPreferences.getSelectedServer())
                         .get(ServerPreferences.LAST_STATE);
             }
@@ -481,7 +484,7 @@ public class UIFragment extends Fragment
     }
 
     private String getCurrentRefId() {
-        if(mPreferences.getSelectedServer() == null)
+        if (mPreferences.getSelectedServer() == null)
             return null;
         return mPreferences.getServerInfo(mPreferences.getSelectedServer())
                 .get(ServerPreferences.SERVER_REFID);
