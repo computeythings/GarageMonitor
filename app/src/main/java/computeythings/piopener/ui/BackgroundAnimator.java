@@ -54,8 +54,9 @@ class BackgroundAnimator {
         public void run() {
             if (running) {
                 try {
-                    background.setImageResource(res[index++ % res.length]);
+                    background.setImageResource(res[index % res.length]);
                     animationHandler.postDelayed(this, duration[index % duration.length]);
+                    index++;
                 } catch (NullPointerException e) {
                     Log.e(TAG, "Background no longer exists. Stopping animation.");
                     e.printStackTrace();
@@ -78,8 +79,9 @@ class BackgroundAnimator {
         public void run() {
             if (running) {
                 try {
-                    background.setImageResource(res[index++ % res.length]);
+                    background.setImageResource(res[index % res.length]);
                     animationHandler.postDelayed(this, duration[index % duration.length]);
+                    index++;
                 } catch (NullPointerException e) {
                     Log.e(TAG, "Background no longer exists. Stopping animation.");
                     e.printStackTrace();
