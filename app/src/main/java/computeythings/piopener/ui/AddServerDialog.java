@@ -31,6 +31,7 @@ import java.util.Set;
 import computeythings.piopener.R;
 import computeythings.piopener.preferences.ServerPreferences;
 
+import static computeythings.piopener.preferences.ServerPreferences.NOTIFICATION_TIMER;
 import static computeythings.piopener.preferences.ServerPreferences.NOTIFY_CLOSED;
 import static computeythings.piopener.preferences.ServerPreferences.NOTIFY_CLOSING;
 import static computeythings.piopener.preferences.ServerPreferences.NOTIFY_OPEN;
@@ -161,6 +162,9 @@ public class AddServerDialog extends DialogFragment {
             mOpeningNotifications.setChecked(Boolean.valueOf((String) serverInfo.get(NOTIFY_OPENING)));
             mClosedNotifications.setChecked(Boolean.valueOf((String) serverInfo.get(NOTIFY_CLOSED)));
             mClosingNotifications.setChecked(Boolean.valueOf((String) serverInfo.get(NOTIFY_CLOSING)));
+            long notificationTimer = Long.parseLong((String) serverInfo.get(NOTIFICATION_TIMER));
+            if(notificationTimer > 0)
+                mNotificationTimer.setText(String.valueOf(notificationTimer));
 
             // Change edit buttons and give Delete option
             builder.setNeutralButton(R.string.delete, new DialogInterface.OnClickListener() {
