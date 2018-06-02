@@ -9,11 +9,9 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -101,7 +99,7 @@ public class ServerPreferences {
         Updates notification info for a given server
      */
     public boolean setNotifications(String server, Set<String> monitoredStates,
-                                 long notificationTimer) {
+                                    long notificationTimer) {
         SharedPreferences prefs = mContext.getSharedPreferences(PREFERENCES + SERVERS,
                 Context.MODE_PRIVATE);
         JSONObject serverInfo;

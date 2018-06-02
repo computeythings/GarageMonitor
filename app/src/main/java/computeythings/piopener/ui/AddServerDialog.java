@@ -98,12 +98,12 @@ public class AddServerDialog extends DialogFragment {
         dialogLayout.findViewById(R.id.show_advanced).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(advanced.getVisibility() == View.GONE) {
+                if (advanced.getVisibility() == View.GONE) {
                     advanced.setVisibility(View.VISIBLE);
-                    ((Button)(view)).setText(R.string.basic);
+                    ((Button) (view)).setText(R.string.basic);
                 } else {
                     advanced.setVisibility(View.GONE);
-                    ((Button)(view)).setText(R.string.advanced);
+                    ((Button) (view)).setText(R.string.advanced);
                 }
             }
         });
@@ -162,8 +162,9 @@ public class AddServerDialog extends DialogFragment {
             mOpeningNotifications.setChecked(Boolean.valueOf((String) serverInfo.get(NOTIFY_OPENING)));
             mClosedNotifications.setChecked(Boolean.valueOf((String) serverInfo.get(NOTIFY_CLOSED)));
             mClosingNotifications.setChecked(Boolean.valueOf((String) serverInfo.get(NOTIFY_CLOSING)));
+
             long notificationTimer = Long.parseLong((String) serverInfo.get(NOTIFICATION_TIMER));
-            if(notificationTimer > 0)
+            if (notificationTimer > 0)
                 mNotificationTimer.setText(String.valueOf(notificationTimer));
 
             // Change edit buttons and give Delete option
@@ -218,7 +219,7 @@ public class AddServerDialog extends DialogFragment {
                     String certLocation = mCertField.getText().toString().trim();
                     Set<String> monitoredStates = new HashSet<>();
                     String timer = mNotificationTimer.getText().toString().trim();
-                    if(timer.equals(""))
+                    if (timer.equals(""))
                         timer = "0";
 
                     if (serverName.equals(""))
@@ -227,13 +228,13 @@ public class AddServerDialog extends DialogFragment {
                         serverPort = "4444";
                     if (certLocation.equals("") && mCertURI == null)
                         mCertURI = certLocation;
-                    if(mOpenNotifications.isChecked())
+                    if (mOpenNotifications.isChecked())
                         monitoredStates.add(STATE_OPEN);
-                    if(mOpeningNotifications.isChecked())
+                    if (mOpeningNotifications.isChecked())
                         monitoredStates.add(STATE_OPENING);
-                    if(mClosedNotifications.isChecked())
+                    if (mClosedNotifications.isChecked())
                         monitoredStates.add(STATE_CLOSED);
-                    if(mClosingNotifications.isChecked())
+                    if (mClosingNotifications.isChecked())
                         monitoredStates.add(STATE_CLOSING);
 
                     if (serverAddress.length() <= 0 || serverApiKey.length() <= 0) {
