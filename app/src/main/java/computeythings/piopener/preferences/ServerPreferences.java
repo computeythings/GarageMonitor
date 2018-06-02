@@ -85,10 +85,8 @@ public class ServerPreferences {
         JSONObject serverInfo;
         try {
             serverInfo = new JSONObject(prefs.getString(server, ""));
-            if (!serverInfo.has(LAST_STATE) || !serverInfo.getString(LAST_STATE).equals(state)) {
-                serverInfo.put(LAST_STATE, state);
-                serverInfo.put(LAST_UPDATED, updateTime);
-            }
+            serverInfo.put(LAST_STATE, state);
+            serverInfo.put(LAST_UPDATED, updateTime);
         } catch (JSONException e) {
             Log.e(TAG, "Received bad JSON info for " + server);
             return false;
@@ -144,6 +142,16 @@ public class ServerPreferences {
             default:
                 return true;
         }
+    }
+
+    /*
+        Returns the delay timer for the server or 0 if there is none
+     */
+    public long notificationDelay(String server) {
+        HashMap<String, String> info = getServerInfo(server);
+        String delay = info.get(NOTIFICATION_TIMER);
+
+        return delay == null ? 0L : Long.parseLong(delay) * 60000;
     }
 
     public boolean setServerRefId(String server, String refID) {
