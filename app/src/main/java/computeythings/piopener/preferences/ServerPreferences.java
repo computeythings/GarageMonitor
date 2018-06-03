@@ -146,10 +146,16 @@ public class ServerPreferences {
         Returns the delay timer for the server or 0 if there is none
      */
     public long notificationDelay(String server) {
-        HashMap<String, String> info = getServerInfo(server);
-        String delay = info.get(NOTIFICATION_TIMER);
+        try {
+            HashMap<String, String> info = getServerInfo(server);
+            String delay = info.get(NOTIFICATION_TIMER);
 
-        return delay == null ? 0L : Long.parseLong(delay) * 60000;
+            return delay == null ? 0L : Long.parseLong(delay) * 60000;
+        } catch (NullPointerException e) {
+            Log.e(TAG, "Could not get server notification info for " + server);
+            e.printStackTrace();
+            return 0L;
+        }
     }
 
     public boolean setServerRefId(String server, String refID) {
