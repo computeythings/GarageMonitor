@@ -16,12 +16,20 @@ import computeythings.piopener.R;
  */
 
 public class UIActivity extends AppCompatActivity implements AddServerDialog.OnServerListChangeListener {
-    private static final String TAG = "MAIN_ACTIVITY";
+    private static final String TAG = "UI_ACTIVITY";
+    // only one of this activity should be running at a time
+    public static boolean isRunning = false; // IMPORTANT for proper notification updates
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.app_container);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        isRunning = true;
     }
 
     /*
@@ -43,6 +51,12 @@ public class UIActivity extends AppCompatActivity implements AddServerDialog.OnS
             e.printStackTrace();
             super.onBackPressed();
         }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        isRunning = false;
     }
 
     /*

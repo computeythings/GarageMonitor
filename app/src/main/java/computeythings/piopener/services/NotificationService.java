@@ -21,6 +21,7 @@ import java.util.List;
 
 import computeythings.piopener.R;
 import computeythings.piopener.preferences.ServerPreferences;
+import computeythings.piopener.ui.UIActivity;
 
 public class NotificationService extends Service {
     private static final int SUMMARY_ID = 0;
@@ -106,18 +107,7 @@ public class NotificationService extends Service {
         Returns true if the app is active and running in the foreground.
      */
     public boolean checkApp() {
-        String packageName = getApplicationContext().getPackageName();
-        ActivityManager am = (ActivityManager) this
-                .getSystemService(ACTIVITY_SERVICE);
-
-        // get the info from the currently running task
-        if (am != null) {
-            List<ActivityManager.RunningTaskInfo> taskInfo = am.getRunningTasks(1);
-
-            ComponentName componentInfo = taskInfo.get(0).topActivity;
-            return componentInfo.getPackageName().equalsIgnoreCase(packageName);
-        }
-        return false;
+        return UIActivity.isRunning;
     }
 
     /*
