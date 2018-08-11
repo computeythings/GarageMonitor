@@ -11,6 +11,8 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
+import javax.net.ssl.HandshakeCompletedEvent;
+import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLHandshakeException;
@@ -55,6 +57,7 @@ public class AsyncSocketCreator extends AsyncTask<String, Void, SSLSocket> {
             Log.i(TAG, "Creating socket");
             Socket raw = new Socket(server, port);
             socket = (SSLSocket) mSocketFactory.createSocket(raw, server, port, true);
+            socket.setNeedClientAuth(false);
             // connect to the new SSL socket and send the API Key as verification
             OutputStream out = socket.getOutputStream();
             out.write(api.getBytes());

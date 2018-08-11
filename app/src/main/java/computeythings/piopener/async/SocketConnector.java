@@ -222,8 +222,8 @@ public class SocketConnector implements SocketCreatedListener {
     @Override
     public void onSocketReady(SSLSocket socket, String message) {
         this.socket = socket;
-        if (socket != null) {
-            isConnected = socket.isConnected();
+        if (socket != null && !socket.isClosed()) {
+            isConnected = true;
             reader = new AsyncSocketReader(uiListener);
             reader.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, socket);
             // save the reference ID to app preferences
@@ -233,6 +233,7 @@ public class SocketConnector implements SocketCreatedListener {
                 socketWrite(queue);
             }
         } else {
+            isConnected = false;
             if (message != null) {
                 uiListener.onSocketResult(false);
             }

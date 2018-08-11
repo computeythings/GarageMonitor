@@ -173,6 +173,10 @@ public class ServerPreferences {
             Log.e(TAG, "Could not parse info for " + server);
             e.printStackTrace();
             return false;
+        } catch (IllegalArgumentException e) {
+            Log.e(TAG, "Invalid information. Could not use refID: " + refID);
+            e.printStackTrace();
+            return false;
         }
         // subscribe to the server topic to receive FCM updates
         FirebaseMessaging.getInstance().subscribeToTopic(refID);
