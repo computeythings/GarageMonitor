@@ -30,6 +30,7 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.Set;
 
 import computeythings.piopener.R;
@@ -44,9 +45,9 @@ import computeythings.piopener.services.FCMService;
  * Created by bryan on 2/9/18.
  */
 
-public class UIFragment extends Fragment
+public class StatusViewFragment extends Fragment
         implements NavigationView.OnNavigationItemSelectedListener, SocketResultListener {
-    private static final String TAG = "UI_Fragment";
+    private static final String TAG = "SV_Fragment";
     private static final String STATE_OPEN = "OPEN";
     private static final String STATE_OPENING = "OPENING";
     private static final String STATE_CLOSED = "CLOSED";
@@ -319,6 +320,7 @@ public class UIFragment extends Fragment
                     serverInfo.get(ServerPreferences.SERVER_CERT));*/
             editInfo.putSerializable(AddServerDialog.EDIT_INFO, serverInfo);
             dialog.setArguments(editInfo);
+            assert getFragmentManager() != null;
             dialog.show(getFragmentManager(), "new_server");
             return true;
         }
@@ -387,7 +389,7 @@ public class UIFragment extends Fragment
         Create host view
      */
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_main, container, false);
     }
@@ -396,7 +398,7 @@ public class UIFragment extends Fragment
         UI setup once the parent view is initialized
      */
     @Override
-    public void onViewCreated(View view, Bundle savedInstanceState) {
+    public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         mParentView = view; // this will be the parent view for the lifetime of this fragment
 
         // navigation drawer setup
@@ -404,6 +406,7 @@ public class UIFragment extends Fragment
         if (mPreferences.getSelectedServer() != null)
             toolbar.setTitle(mPreferences.getSelectedServer());
         AppCompatActivity activity = (AppCompatActivity) getActivity();
+        assert activity != null;
         activity.setSupportActionBar(toolbar);
         mDrawer = mParentView.findViewById(R.id.drawer_layout);
         // add listener to toggle nav drawer from toolbar
@@ -455,7 +458,7 @@ public class UIFragment extends Fragment
 
     @Override
     public void onPause() {
-        if (!getActivity().isChangingConfigurations())
+        if (!Objects.requireNonNull(getActivity()).isChangingConfigurations())
             socketClose();
         super.onPause();
     }

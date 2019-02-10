@@ -38,7 +38,7 @@ public class UIActivity extends AppCompatActivity implements AddServerDialog.OnS
     @Override
     public void onBackPressed() {
         try {
-            UIFragment ui = (UIFragment) getSupportFragmentManager()
+            StatusViewFragment ui = (StatusViewFragment) getSupportFragmentManager()
                     .findFragmentById(R.id.ui_fragment);
             DrawerLayout drawer = ui.getDrawerLayout();
             if (drawer.isDrawerOpen(GravityCompat.START)) {
@@ -68,7 +68,7 @@ public class UIActivity extends AppCompatActivity implements AddServerDialog.OnS
             Log.e(TAG, "Attempting to add null server");
             return;
         }
-        UIFragment ui = (UIFragment) getSupportFragmentManager().findFragmentById(R.id.ui_fragment);
+        StatusViewFragment ui = (StatusViewFragment) getSupportFragmentManager().findFragmentById(R.id.ui_fragment);
         ui.serverModified(server);
     }
 
@@ -78,7 +78,7 @@ public class UIActivity extends AppCompatActivity implements AddServerDialog.OnS
             Log.e(TAG, "Attempting to delete null server");
             return;
         }
-        UIFragment ui = (UIFragment) getSupportFragmentManager().findFragmentById(R.id.ui_fragment);
+        StatusViewFragment ui = (StatusViewFragment) getSupportFragmentManager().findFragmentById(R.id.ui_fragment);
         ui.serverDeleted(server);
     }
 }

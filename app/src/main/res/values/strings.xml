@@ -13,6 +13,9 @@
     <string name="server_cert_label">Cert Location:</string>
 
     <string name="server_menu_title">Servers</string>
+    <string name="discover_servers_progress_text">Searching for servers…</string>
+    <string name="discover_servers_empty">No servers found</string>
+    <string name="manual_add_button">Manual Entry</string>
     <string name="add_server">Add Server</string>
     <string name="optional">Optional</string>
     <string name="cert_hint">For Self-Signed Certs</string>
@@ -38,4 +41,5 @@
     <string name="open_notifications">OPEN</string>
     <string name="closing_notifications">CLOSING</string>
     <string name="closed_notifications">CLOSED</string>
+    <string name="proceed">proceed</string>
 </resources>
