@@ -59,4 +59,10 @@ public class FCMService extends FirebaseMessagingService {
             broadcaster.sendBroadcast(update);
         }
     }
+
+    @Override
+    public void onNewToken(String token) {
+        super.onNewToken(token);
+        Log.e("NEW TOKEN:", token);
+    }
 }

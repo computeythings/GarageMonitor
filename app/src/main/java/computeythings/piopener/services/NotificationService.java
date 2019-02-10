@@ -1,13 +1,10 @@
 package computeythings.piopener.services;
 
-import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.Service;
-import android.content.ComponentName;
 import android.content.Intent;
 import android.media.RingtoneManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
@@ -17,7 +14,6 @@ import android.util.Log;
 
 import java.util.Calendar;
 import java.util.HashMap;
-import java.util.List;
 
 import computeythings.piopener.R;
 import computeythings.piopener.preferences.ServerPreferences;
@@ -39,6 +35,7 @@ public class NotificationService extends Service {
     private ServerPreferences prefs;
     private HashMap<String, Runnable> notifications;
     private Handler notificationSender;
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -95,7 +92,7 @@ public class NotificationService extends Service {
     }
 
     private boolean startNotificationTimer(String server, long startTime, long delay) {
-        if(notifications.get(server) != null) // make sure only one timer is active at once
+        if (notifications.get(server) != null) // make sure only one timer is active at once
             return false;
 
         Runnable notification = new NotificationTimer(server, startTime);
@@ -121,15 +118,15 @@ public class NotificationService extends Service {
         Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         Notification notification =
                 new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle(server)
-                .setContentText(message)
-                .setSound(alarmSound)
-                .setVibrate(new long[0])
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setGroup(NOTIFICATION_GROUP_PREFIX + server)
-                .setAutoCancel(true)
-                .build();
+                        .setSmallIcon(R.mipmap.ic_launcher)
+                        .setContentTitle(server)
+                        .setContentText(message)
+                        .setSound(alarmSound)
+                        .setVibrate(new long[0])
+                        .setPriority(NotificationCompat.PRIORITY_HIGH)
+                        .setGroup(NOTIFICATION_GROUP_PREFIX + server)
+                        .setAutoCancel(true)
+                        .build();
         Notification summary =
                 new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL)
                         .setSmallIcon(R.mipmap.ic_launcher)
