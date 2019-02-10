@@ -7,6 +7,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,9 +28,15 @@ public class AddServerFragment extends Fragment {
     private InetAddress getBroadcastAddress() throws IOException {
         WifiManager wifi = (WifiManager) Objects.requireNonNull(getActivity())
                 .getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        DhcpInfo dhcp;
 
-        DhcpInfo dhcp = wifi.getDhcpInfo();
-        // handle null somehow
+        if (wifi != null) {
+            dhcp = wifi.getDhcpInfo();
+        } else {
+            Log.e(TAG, "Could not connect to the network.");
+            return null;
+        }
+
 
         int broadcast = (dhcp.ipAddress & dhcp.netmask) | ~dhcp.netmask;
         byte[] quads = new byte[4];
@@ -46,10 +53,12 @@ public class AddServerFragment extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
-        AsyncServerDiscover discoverer = new AsyncServerDiscover();
-        ArrayList<ServerListItem> discovered = new ArrayList<>();
+        RecyclerView serverList = view.findViewById(R.id.discover_servers_list);
+        ServerListAdapter adapter = new ServerListAdapter();
+        serverList.setAdapter(adapter);
+
         try {
-            discoverer.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,
+            new AsyncServerDiscover(adapter).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,
                     getBroadcastAddress());
         } catch (IOException e) {
             Log.e(TAG, "Could not get broadcast address");

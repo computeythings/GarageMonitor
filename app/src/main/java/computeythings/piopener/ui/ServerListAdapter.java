@@ -7,9 +7,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+
 import computeythings.piopener.R;
 
-public class ServerList extends RecyclerView.Adapter<ServerList.ViewHolder> {
+public class ServerListAdapter extends RecyclerView.Adapter<ServerListAdapter.ViewHolder> {
     class ViewHolder extends RecyclerView.ViewHolder {
         TextView hostname;
         TextView ip;
@@ -21,9 +23,14 @@ public class ServerList extends RecyclerView.Adapter<ServerList.ViewHolder> {
         }
     }
 
-    private ServerListItem[] servers;
-    public ServerList(ServerListItem[] servers) {
-        this.servers = servers;
+    private ArrayList<ServerListItem> servers;
+    ServerListAdapter() {
+        this.servers = new ArrayList<>();
+    }
+
+    public void addServer(ServerListItem server) {
+        servers.add(server);
+        notifyItemInserted(servers.size()-1);
     }
 
     @NonNull
@@ -36,7 +43,7 @@ public class ServerList extends RecyclerView.Adapter<ServerList.ViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int i) {
-        ServerListItem server = servers[i];
+        ServerListItem server = servers.get(i);
 
         holder.hostname.setText(server.getHostname());
         holder.ip.setText(server.getIp());
